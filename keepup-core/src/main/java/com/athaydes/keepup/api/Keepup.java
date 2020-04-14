@@ -10,6 +10,7 @@ import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -69,11 +70,16 @@ public final class Keepup implements Closeable, AutoCloseable {
     public void restartApplication() {
         var updateLauncher = new File(config.appHome(), updateLauncher(config));
         try {
-            int code = new ProcessBuilder(updateLauncher.getAbsolutePath())
+            var proc = new ProcessBuilder(updateLauncher.getAbsolutePath())
                     .inheritIO()
-                    .start()
-                    .waitFor();
-            System.exit(code);
+                    .start();
+            var terminated = proc.waitFor(15, TimeUnit.SECONDS);
+            if (terminated) {
+                System.exit(proc.exitValue());
+            } else {
+                System.exit(0);
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
