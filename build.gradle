@@ -1,0 +1,38 @@
+plugins {
+    id 'org.javamodularity.moduleplugin' version '1.6.0' apply false
+}
+
+subprojects { sub ->
+    if (sub.path == ':examples') {
+        return
+    }
+    println "project ${sub.path}"
+    apply plugin: 'java'
+    apply plugin: "org.javamodularity.moduleplugin"
+
+    group 'com.athaydes.keepup'
+    version '1.0-SNAPSHOT'
+
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
+    repositories {
+        jcenter()
+    }
+
+    tasks.withType( JavaCompile ) {
+        options.encoding = 'UTF-8'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+
+    def junitVersion = '5.6.2'
+
+    dependencies {
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+        testImplementation "org.junit.jupiter:junit-jupiter-params:$junitVersion"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    }
+}

@@ -1,0 +1,8 @@
+plugins {
+    id "com.jfrog.bintray" version "1.8.4"
+}
+
+description 'Java 11+ application self-updater'
+
+dependencies {
+}
