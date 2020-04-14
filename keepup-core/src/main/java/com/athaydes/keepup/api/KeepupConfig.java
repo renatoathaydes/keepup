@@ -2,6 +2,7 @@ package com.athaydes.keepup.api;
 
 import java.io.File;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public interface KeepupConfig {
     String appName();
@@ -12,5 +13,7 @@ public interface KeepupConfig {
 
     AppDistributor distributor();
 
-    ExecutorService executor();
+    default ExecutorService executor() {
+        return Executors.newSingleThreadExecutor();
+    }
 }

@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+}
+
+version '1.0-SNAPSHOT'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation project(':keepup-core')
+}
+
+def image = "${buildDir}/image"
+def mods = "${buildDir}/mods"
+
+task deps {
+    dependsOn jar
+    doLast {
+        copy {
+            from configurations.runtimeClasspath
+            from jar
+            into mods
+        }
+    }
+}
+
+task jlink(type: Exec) {
+    dependsOn deps
+    inputs.files(sourceSets*.allSource)
+    outputs.dir(image)
+    def options = [
+            '--module-path', mods,
+            '--vm=server', // options: client|server|minimal|all
+            '--add-modules', 'com.athaydes.keepup.core,keepup.examples.trivial',
+            '--output', image,
+            '--launcher', 'my_app=keepup.examples.trivial/keepup.examples.trivial.TrivialApp',
+            '--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    def jlink = System.getProperty('java.home') + '/bin/jlink'
+    commandLine([jlink] + options)
+    doFirst { new File(image).deleteDir() }
+}
+
+task packageUpdate(type: Zip) {
+    from file('my_app')
+    into "my_app/bin"
+    destinationDir buildDir
+    archiveName "trivial-app.zip"
+}
+
+task packageImage(type: Zip) {
+    dependsOn jlink, packageUpdate
+    from image
+    into "my-app"
+    include '**/*'
+    archiveName "my-app-${project.version}.zip"
+    destinationDir buildDir
+}

@@ -57,7 +57,6 @@ public final class LauncherCreator {
         return ("#!/bin/sh\n" +
                 "\n" +
                 "set -e\n" +
-//                "sleep 2\n" +
                 "DIR=\"" + dir + "\"\n" +
                 "rm -rf \"${DIR:?}\"/*\n" +
                 "mv \"" + newDir + "\"/* \"${DIR:?}\"/\n" +

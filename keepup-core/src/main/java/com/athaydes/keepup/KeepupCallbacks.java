@@ -6,7 +6,7 @@ import java.io.File;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class KeepupCallbacks {
+public final class KeepupCallbacks {
     final BiConsumer<String, File> onUpdate;
     final Runnable onNoUpdate;
     final Consumer<KeepupException> onError;

@@ -1,7 +1,5 @@
 package com.athaydes.keepup;
 
-import com.athaydes.keepup.api.KeepupException;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;

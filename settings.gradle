@@ -1,4 +1,6 @@
 rootProject.name = 'keepup'
 
-include 'keepup-core',
-        'examples:simple-local-distro'
+include('keepup-core',
+        'examples:simple-local-distro',
+        'examples:trivial-example',
+)
