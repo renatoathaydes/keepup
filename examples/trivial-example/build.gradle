@@ -1,3 +1,5 @@
+import java.util.concurrent.TimeUnit
+
 plugins {
     id 'java'
 }
@@ -56,4 +58,16 @@ task packageImage(type: Zip) {
     include '**/*'
     archiveName "my-app-${project.version}.zip"
     destinationDir buildDir
+}
+
+task testUpdate {
+    dependsOn packageImage
+    def launcher = "$buildDir/image/bin/my_app"
+    doLast {
+        def proc = launcher.execute()
+        assert proc.inputStream.text == 'Trivial App running.\n' +
+                'Trivial App updated!!\n'
+        assert proc.waitFor(3, TimeUnit.SECONDS): 'Process did not terminate within timeout'
+        assert proc.exitValue() == 0
+    }
 }
