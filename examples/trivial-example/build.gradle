@@ -64,10 +64,14 @@ task testUpdate {
     dependsOn packageImage
     def launcher = "$buildDir/image/bin/my_app"
     doLast {
-        def proc = launcher.execute()
+        def proc = launcher.execute(null, projectDir)
+        def ok = proc.waitFor(5, TimeUnit.SECONDS)
+        if (!ok) {
+            proc.destroyForcibly()
+            assert ok: 'Process did not terminate within timeout'
+        }
         assert proc.inputStream.text == 'Trivial App running.\n' +
                 'Trivial App updated!!\n'
-        assert proc.waitFor(3, TimeUnit.SECONDS): 'Process did not terminate within timeout'
         assert proc.exitValue() == 0
     }
 }
