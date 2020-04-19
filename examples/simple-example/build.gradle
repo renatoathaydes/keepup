@@ -2,6 +2,9 @@ import groovy.text.SimpleTemplateEngine
 
 import java.util.concurrent.TimeUnit
 
+import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
+import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
+
 plugins {
     id 'java'
 }
@@ -74,14 +77,16 @@ task packageImage(type: Zip) {
     destinationDir file('build')
 }
 
+def gradlew = isFamily(FAMILY_WINDOWS) ? 'gradlew.bat' : './gradlew'
+
 task buildVersion1(type: Exec) {
     workingDir rootDir
-    commandLine './gradlew', ':examples:simple-example:jlink'
+    commandLine gradlew, ':examples:simple-example:jlink'
 }
 
 task buildVersion2(type: Exec) {
     workingDir rootDir
-    commandLine './gradlew', ':examples:simple-example:packageImage', '-PnewVersion=2.0'
+    commandLine gradlew, ':examples:simple-example:packageImage', '-PnewVersion=2.0'
 }
 
 task testWithoutUpdate {
