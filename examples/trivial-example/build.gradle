@@ -92,7 +92,7 @@ task buildVersion2(type: Exec) {
 task testUpdate { task ->
     check.dependsOn task
     dependsOn buildVersion1, buildVersion2
-    def launcher = "$buildDir/image/bin/trivial_app"
+    def launcher = "$buildDir/image/bin/trivial_app${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
     def logFile = file("build/app.log")
     doFirst {
         logFile.delete()

@@ -91,7 +91,7 @@ task buildVersion2(type: Exec) {
 
 task testWithoutUpdate {
     dependsOn jlink
-    def launcher = "$buildDir/image/bin/simple_app"
+    def launcher = "$buildDir/image/bin/simple_app${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
     def logFile = file("build/app.log")
     doFirst {
         logFile.delete()
@@ -112,7 +112,7 @@ task testWithoutUpdate {
 
 task testCanUpdate {
     dependsOn buildVersion1, buildVersion2
-    def launcher = "$buildDir/image/bin/simple_app"
+    def launcher = "$buildDir/image/bin/simple_app${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
     def logFile = file("build/app.log")
     doFirst {
         logFile.delete()
