@@ -1,5 +1,7 @@
 # Keepup
 
+![Latest Build](https://github.com/renatoathaydes/keepup/workflows/Java%20CI%20with%20Gradle/badge.svg)
+
 Keepup is a library to allow Java 11+ applications to self-update.
 
 It is designed to work specifically with self-contained applications built with [jlink](https://docs.oracle.com/en/java/javase/11/tools/jlink.html).
