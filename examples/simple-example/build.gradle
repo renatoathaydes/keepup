@@ -43,7 +43,7 @@ task generateJavaSources { task ->
     doLast {
         def template = file('src/main/Version.java.template')
         def generated = new SimpleTemplateEngine().createTemplate(template).make([VERSION: newVersion])
-        file('src/main/java/keepup/examples/trivial/Version.java').withWriter { w ->
+        file('src/main/java/keepup/examples/simple/Version.java').withWriter { w ->
             generated.writeTo(w)
         }
     }
@@ -56,9 +56,9 @@ task jlink(type: Exec) {
     def options = [
             '--module-path', mods,
             '--vm=server', // options: client|server|minimal|all
-            '--add-modules', 'com.athaydes.keepup.core,keepup.examples.trivial',
+            '--add-modules', 'com.athaydes.keepup.core,keepup.examples.simple',
             '--output', image,
-            '--launcher', 'trivial_app=keepup.examples.trivial/keepup.examples.trivial.TrivialApp',
+            '--launcher', 'simple_app=keepup.examples.simple/keepup.examples.simple.SimpleApp',
             '--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     def jlink = System.getProperty('java.home') + '/bin/jlink'
     commandLine([jlink] + options)
@@ -68,25 +68,46 @@ task jlink(type: Exec) {
 task packageImage(type: Zip) {
     dependsOn jlink
     from image
-    into "trivial-app"
+    into "simple-app"
     include '**/*'
-    archiveName "trivial-app.zip"
+    archiveName "simple-app.zip"
     destinationDir file('build')
 }
 
 task buildVersion1(type: Exec) {
     workingDir rootDir
-    commandLine './gradlew', ':examples:trivial-example:jlink'
+    commandLine './gradlew', ':examples:simple-example:jlink'
 }
 
 task buildVersion2(type: Exec) {
     workingDir rootDir
-    commandLine './gradlew', ':examples:trivial-example:packageImage', '-PnewVersion=2.0'
+    commandLine './gradlew', ':examples:simple-example:packageImage', '-PnewVersion=2.0'
 }
 
-task testUpdate {
+task testWithoutUpdate {
+    dependsOn jlink
+    def launcher = "$buildDir/image/bin/simple_app"
+    def logFile = file("build/app.log")
+    doFirst {
+        logFile.delete()
+    }
+    doLast {
+        def proc = launcher.execute(null, projectDir)
+        def ok = proc.waitFor(5, TimeUnit.SECONDS)
+        if (!ok) {
+            proc.destroyForcibly()
+            assert ok: 'Process did not terminate within timeout'
+        }
+        assert proc.exitValue() == 0
+        assert logFile.text ==
+                'SimpleApp version 1.0-SNAPSHOT\n' +
+                'No updates at this time\n'
+    }
+}
+
+task testCanUpdate {
     dependsOn buildVersion1, buildVersion2
-    def launcher = "$buildDir/image/bin/trivial_app"
+    def launcher = "$buildDir/image/bin/simple_app"
     def logFile = file("build/app.log")
     doFirst {
         logFile.delete()
@@ -104,11 +125,17 @@ task testUpdate {
         def tries = 5
         while (!outputIsExpected && tries > 0) {
             outputIsExpected = logFile.text ==
-                    'TrivialApp version 1.0-SNAPSHOT\n' +
-                    'TrivialApp version 2.0\n'
+                    'SimpleApp version 1.0-SNAPSHOT\n' +
+                    'Updating to version v2\n' +
+                    'SimpleApp version 2.0\n' +
+                    'No updates at this time\n'
             tries--
             sleep 500
         }
         assert tries > 0: 'Log file is not as expected: ' + logFile.text
     }
+}
+
+task testUpdate {
+    dependsOn testWithoutUpdate, testCanUpdate
 }

@@ -1,0 +1,6 @@
+package keepup.examples.javafx;
+
+public class Version {
+    public static final String BANNER = "$BANNER";
+    public static final String CURRENT = "$VERSION";
+}

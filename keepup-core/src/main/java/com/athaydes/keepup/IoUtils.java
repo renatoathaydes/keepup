@@ -1,5 +1,7 @@
 package com.athaydes.keepup;
 
+import com.athaydes.keepup.api.KeepupConfig;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,22 +11,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public final class Unpacker {
+final class IoUtils {
 
     public static final String KEEPUP_UNPACKED_APP = "keepup-update";
 
-    public static void unpack(File newVersionZipFile, File home) throws IOException {
+    public static File unpack(File newVersionZipFile, File home) throws IOException {
         var destinationDir = unpackedApp(home);
         if (destinationDir.isDirectory()) {
             deleteContents(destinationDir);
         } else {
             if (destinationDir.isFile()) {
-                throw new IllegalArgumentException("app home is not a directory, but a file");
+                throw new IllegalArgumentException("upgrade destination is not a directory, " +
+                        "but a file: " + destinationDir);
             }
-            destinationDir.mkdirs();
+            if (!destinationDir.mkdirs()) {
+                throw new IllegalStateException("upgrade destination directory cannot be created: " + destinationDir);
+            }
         }
 
         try (var zip = new ZipInputStream(
@@ -47,10 +53,16 @@ public final class Unpacker {
                 zipEntry = zip.getNextEntry();
             }
         }
+
+        return destinationDir;
     }
 
     static File unpackedApp(File home) {
         return new File(home, KEEPUP_UNPACKED_APP);
+    }
+
+    static File currentApp() {
+        return new File(System.getProperty("java.home"));
     }
 
     private static File fileFor(ZipEntry zipEntry, File destinationDir, String topEntryName) {
@@ -83,6 +95,56 @@ public final class Unpacker {
                 }
             });
         }
+    }
+
+    static void copy(File source, File destinationDir) throws IOException {
+        Path srcPath = source.toPath();
+        if (source.isFile()) {
+            Files.copy(srcPath, destinationDir.toPath().resolve(srcPath));
+        } else {
+            Files.walkFileTree(srcPath, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    if (!srcPath.equals(dir)) {
+                        var newDir = new File(destinationDir, srcPath.relativize(dir).toFile().getPath());
+                        if (!newDir.exists()) {
+                            var ok = newDir.mkdir();
+                            if (!ok) {
+                                throw new IllegalStateException("Cannot create directory " + newDir);
+                            }
+                        }
+                    }
+                    return super.preVisitDirectory(dir, attrs);
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    var newFile = destinationDir.toPath().resolve(srcPath.relativize(file).toFile().getPath());
+                    Files.copy(file, newFile);
+                    return super.visitFile(file, attrs);
+                }
+            });
+        }
+    }
+
+    public static boolean looksLikeJlinkApp(File rootDir, KeepupConfig config) {
+        if (rootDir.isDirectory()) {
+            var children = rootDir.list();
+            if (children != null && children.length >= 4) {
+                if (Set.of(children).containsAll(Set.of("bin", "conf", "legal", "lib"))) {
+                    return new File(rootDir, "bin/" + config.appName()).isFile();
+                }
+            }
+        }
+        return false;
+    }
+
+    public static void setFilePermissions(File rootDir, String appName) {
+        new File(rootDir, "bin/" + appName).setExecutable(true, false);
+        new File(rootDir, "bin/java").setExecutable(true, false);
+        new File(rootDir, "bin/keytool").setExecutable(true, false);
+        new File(rootDir, "lib/jexec").setExecutable(true, false);
+        new File(rootDir, "lib/jspawnhelper").setExecutable(true, false);
     }
 
 }

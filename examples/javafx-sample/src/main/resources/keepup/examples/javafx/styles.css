@@ -1,0 +1,19 @@
+.root {
+    -fx-base: #1d1d1d;
+}
+
+Label {
+    -fx-font-family: Lucida;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+Text {
+    -fx-font-size: 40;
+    -fx-fill: linear-gradient(to top, limegreen, white);
+}
+
+.progress-bar > .bar {
+    -fx-background-color: limegreen;
+    -fx-border-style: none;
+}
