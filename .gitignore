@@ -4,3 +4,6 @@
 build/
 
 out/
+
+# Version files are auto-generated
+Version.java
