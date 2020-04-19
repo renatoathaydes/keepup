@@ -84,7 +84,8 @@ task buildVersion2(type: Exec) {
     commandLine './gradlew', ':examples:trivial-example:packageImage', '-PnewVersion=2.0'
 }
 
-task testUpdate {
+task testUpdate { task ->
+    check.dependsOn task
     dependsOn buildVersion1, buildVersion2
     def launcher = "$buildDir/image/bin/trivial_app"
     def logFile = file("build/app.log")
