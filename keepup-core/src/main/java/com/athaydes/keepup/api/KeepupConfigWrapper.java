@@ -4,6 +4,9 @@ import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
+/**
+ * Not a public class.
+ */
 final class KeepupConfigWrapper implements KeepupConfig {
     private final String appName;
     private final File appHome;

@@ -1,6 +1,17 @@
 package com.athaydes.keepup.api;
 
+import java.util.function.Consumer;
+
+/**
+ * Error that may occur during a Keepup upgrade cycle.
+ * <p>
+ * Applications should handle this exception in the {@link Keepup#onError(Consumer)} callback.
+ */
 public class KeepupException extends RuntimeException {
+
+    /**
+     * Simple error codes describing at a high level what kind of issues may cause a {@link KeepupException}.
+     */
     public enum ErrorCode {
         DOWNLOAD,
         LATEST_VERSION_CHECK,

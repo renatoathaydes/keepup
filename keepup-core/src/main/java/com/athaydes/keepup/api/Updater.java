@@ -9,6 +9,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+/**
+ * Simple class that can be used for checking for new updates, i.e. starting a new Keepup upgrade cycle.
+ */
 public final class Updater {
 
     private final AtomicBoolean isUpdating = new AtomicBoolean(false);
@@ -33,6 +36,13 @@ public final class Updater {
         );
     }
 
+    /**
+     * Check for updates.
+     * <p>
+     * Calling this method has the effect of starting a Keepup upgrade cycle.
+     *
+     * @see Keepup
+     */
     public void checkForUpdate() {
         if (isUpdating.compareAndSet(false, true)) {
             new KeepupStateMachine(config, callbacks).start();

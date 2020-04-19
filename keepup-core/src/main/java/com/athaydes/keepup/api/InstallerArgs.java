@@ -4,6 +4,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+/**
+ * Arguments provided to the installer.
+ * <p>
+ * The installer is an application that runs inside the downloaded upgrade while the old application is
+ * still installed on the local machine. Its job is to replace the old application with the new one.
+ * <p>
+ * Currently, only Keepup implements the installer, but in the future applications may provide custom
+ * installer implementations, which would then be handled this set of arguments.
+ */
 public final class InstallerArgs {
     private final Path currentVersion;
     private final Path newVersion;
