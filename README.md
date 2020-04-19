@@ -1,8 +1,8 @@
 # Keepup
 
-Keepup is a Java library for self-updating applications.
+Keepup is a library to allow Java 11+ applications to self-update.
 
-It is designed to work specifically with self-contained applications built with [jlink]().
+It is designed to work specifically with self-contained applications built with [jlink](https://docs.oracle.com/en/java/javase/11/tools/jlink.html).
 
 ## Requirements
 
@@ -28,12 +28,41 @@ the launcher, the JVM, all libraries, everything that is packed with `jlink` and
 * supports immediate app restart and upgrade on exit.
 * does not enforce where app is distributed from: use GitHub Releases, Amazon S3, GitLab, your own server or anything else.  
 * 100% configured with code.
+* no bash or batch code involved: Keepup is pure Java.
 
-## How to use it
+## Using Keepup
+
+### Dependency setup
+
+Gradle:
+
+```groovy
+implementation "com.athaydes.keepup:keepup-core:1.0"
+```
+
+Maven:
+
+```xml
+<dependency>
+    <groupId>com.athaydes.keepup</groupId>
+    <artifactId>keepup-core</artifactId>
+    <version>1.0</version>
+</dependency>
+```
+
+### Module setup
+
+```java
+module my.mod {
+    requires com.athaydes.keepup.core;
+}
+```
+
+### Code
 
 An application must create an instance of the `Keepup` class to use Keepup. This requires two things:
 
-### Implement `com.athaydes.keepup.api.AppDistributor`
+#### Implement `com.athaydes.keepup.api.AppDistributor`
 
 > In the future, there will be some default implementations using common distribution channels,
 > such as JCenter and GitHub Releases.
@@ -59,7 +88,7 @@ class MyAppDistributor implements AppDistributor {
 }
 ```
 
-### Implement `com.athaydes.keepup.api.KeepupConfig`
+#### Implement `com.athaydes.keepup.api.KeepupConfig`
 
 ```java
 import com.athaydes.keepup.api.KeepupConfig;
@@ -78,7 +107,9 @@ class TrivialConfig implements KeepupConfig {
 }
 ```
 
-Now, create a `Keepup` instance and set callbacks for everything:
+#### Create a `Keepup` instance and set callbacks
+
+Now, create a `Keepup` instance and set callbacks for everything.
 
 > All callbacks have sensible defaults, but you probably should implement them anyway
 > to customize how your users will be told about upgrades, how to validate the download, etc.
@@ -121,3 +152,7 @@ class MyApp {
     }
 }
 ```
+
+## Working examples
+
+Please find working examples of applications using Keepup in the [examples](examples) directory.
