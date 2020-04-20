@@ -89,6 +89,12 @@ task buildVersion2(type: Exec) {
     commandLine gradlew, ':examples:simple-example:packageImage', '-PnewVersion=2.0'
 }
 
+def keepupLog = {
+    def file = file('build/keepup.log')
+    if (file.isFile()) return file.text
+    else return ''
+}
+
 task testWithoutUpdate {
     dependsOn jlink
     def launcher = "$buildDir/image/bin/simple_app${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
@@ -101,12 +107,13 @@ task testWithoutUpdate {
         def ok = proc.waitFor(5, TimeUnit.SECONDS)
         if (!ok) {
             proc.destroyForcibly()
-            assert ok: 'Process did not terminate within timeout'
+            assert ok: 'Process did not terminate within timeout\n' +
+                    "Keepup log: ${keepupLog()}"
         }
-        assert proc.exitValue() == 0
+        assert proc.exitValue() == 0: "Keepup log: ${keepupLog()}"
         assert logFile.text ==
                 'SimpleApp version 1.0-SNAPSHOT\n' +
-                'No updates at this time\n'
+                'No updates at this time\n': "Keepup log: ${keepupLog()}"
     }
 }
 
@@ -122,9 +129,9 @@ task testCanUpdate {
         def ok = proc.waitFor(5, TimeUnit.SECONDS)
         if (!ok) {
             proc.destroyForcibly()
-            assert ok: 'Process did not terminate within timeout'
+            assert ok: "Process did not terminate within timeout\nKeepup log: ${keepupLog()}"
         }
-        assert proc.exitValue() == 0
+        assert proc.exitValue() == 0: "Keepup log: ${keepupLog()}"
 
         def outputIsExpected = false
         def tries = 5
@@ -137,7 +144,8 @@ task testCanUpdate {
             tries--
             sleep 500
         }
-        assert tries > 0: 'Log file is not as expected: ' + logFile.text
+        assert tries > 0: "Log file is not as expected: '${logFile.text}'\n" +
+                "Keepup log: ${keepupLog()}"
     }
 }
 

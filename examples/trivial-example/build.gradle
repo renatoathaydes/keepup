@@ -89,6 +89,12 @@ task buildVersion2(type: Exec) {
     commandLine gradlew, ':examples:trivial-example:packageImage', '-PnewVersion=2.0'
 }
 
+def keepupLog = {
+    def file = new File(System.getProperty("user.home"), '.trivial_app/keepup.log')
+    if (file.isFile()) return file.text
+    else return ''
+}
+
 task testUpdate { task ->
     check.dependsOn task
     dependsOn buildVersion1, buildVersion2
@@ -102,9 +108,10 @@ task testUpdate { task ->
         def ok = proc.waitFor(5, TimeUnit.SECONDS)
         if (!ok) {
             proc.destroyForcibly()
-            assert ok: 'Process did not terminate within timeout'
+            assert ok: 'Process did not terminate within timeout\n' +
+                    "Keepup log: ${keepupLog()}"
         }
-        assert proc.exitValue() == 0
+        assert proc.exitValue() == 0: "Keepup log: ${keepupLog()}"
 
         def outputIsExpected = false
         def tries = 5
@@ -115,6 +122,7 @@ task testUpdate { task ->
             tries--
             sleep 500
         }
-        assert tries > 0: 'Log file is not as expected: ' + logFile.text
+        assert tries > 0: "Log file is not as expected: ${logFile.text}\n" +
+                "Keepup log: ${keepupLog()}"
     }
 }
