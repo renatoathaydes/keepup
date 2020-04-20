@@ -1,12 +1,9 @@
 package com.athaydes.keepup.api;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 /**
  * Configuration to be used by {@link Keepup}.
@@ -43,19 +40,11 @@ public interface KeepupConfig {
     }
 
     /**
-     * @return A simple {@link Consumer} that will be called by {@link Keepup} for logging.
-     * By default, this logger will write to a file at {@link KeepupConfig#appHome()} called
+     * @return the location of Keepup's log file.
+     * By default, this is a file at {@link KeepupConfig#appHome()} called
      * {@code keepup.log}.
      */
-    default Consumer<String> logger() {
-        var logFile = new File(appHome(), "keepup.log").toPath();
-        return (msg) -> {
-            try {
-                Files.writeString(logFile, System.currentTimeMillis() + " - " + msg + "\n",
-                        StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        };
+    default Path keepupLog() {
+        return appHome().toPath().resolve("keepup.log");
     }
 }

@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import static com.athaydes.keepup.IoUtils.currentApp;
 import static com.athaydes.keepup.IoUtils.looksLikeJlinkApp;
@@ -29,18 +28,18 @@ public final class KeepupStateMachine {
 
     private final KeepupConfig config;
     private final KeepupCallbacks callbacks;
-    private final Consumer<String> log;
+    private final KeepupLogger log;
 
     public KeepupStateMachine(KeepupConfig config, KeepupCallbacks callbacks) {
         this.config = config;
         this.callbacks = callbacks;
-        this.log = config.logger();
+        this.log = new KeepupLogger(config.keepupLog());
     }
 
     public void start() {
         config.executor().submit(() -> {
             if (isFirstRun.getAndSet(false)) {
-                log.accept("First run");
+                log.log("First run");
                 File unpackedApp = IoUtils.unpackedApp(config.appHome());
                 if (unpackedApp.isDirectory()) {
                     // we have just updated and not cleaned up yet
@@ -59,7 +58,7 @@ public final class KeepupStateMachine {
     }
 
     private void checkForUpdate(KeepupConfig config, KeepupCallbacks callbacks) {
-        log.accept("Checking for update");
+        log.log("Checking for update");
         try {
             config.distributor().findLatestVersion()
                     .ifPresentOrElse(
@@ -71,18 +70,18 @@ public final class KeepupStateMachine {
     }
 
     private void cleanupPreviousUpdate(File unpackedApp) {
-        log.accept("Cleaning up previous update");
+        log.log("Cleaning up previous update");
         try {
             IoUtils.deleteContents(unpackedApp);
             Files.delete(unpackedApp.toPath());
         } catch (IOException e) {
             // ignore error
-            log.accept("ERROR: " + e);
+            log.log("ERROR: " + e);
         }
     }
 
     private void noUpdate(KeepupCallbacks callbacks) {
-        log.accept("No update available");
+        log.log("No update available");
         try {
             callbacks.onNoUpdate.run();
             endEarly();
@@ -95,7 +94,7 @@ public final class KeepupStateMachine {
                           KeepupConfig config,
                           KeepupCallbacks callbacks) {
         config.executor().submit(() -> {
-            log.accept("Downloading version " + newVersion);
+            log.log("Downloading version " + newVersion);
             try {
                 var zip = config.distributor().download(newVersion);
                 verifyUpdate(newVersion, zip, config, callbacks);
@@ -110,7 +109,7 @@ public final class KeepupStateMachine {
                               KeepupConfig config,
                               KeepupCallbacks callbacks) {
         config.executor().submit(() -> {
-            log.accept("Verifying update");
+            log.log("Verifying update");
             try {
                 callbacks.onUpdate.apply(newVersion, zip).whenComplete((continueUpdate, error) -> {
                     if (error != null) {
@@ -118,7 +117,7 @@ public final class KeepupStateMachine {
                     } else if (continueUpdate) {
                         unpackNewVersion(zip, config, callbacks);
                     } else {
-                        log.accept("Update rejected");
+                        log.log("Update rejected");
                         endEarly();
                     }
                 });
@@ -132,7 +131,7 @@ public final class KeepupStateMachine {
                                   KeepupConfig config,
                                   KeepupCallbacks callbacks) {
         config.executor().submit(() -> {
-            log.accept("Unpacking update");
+            log.log("Unpacking update");
             try {
                 var newVersionDir = IoUtils.unpack(zip, config.appHome());
                 if (looksLikeJlinkApp(newVersionDir, config)) {
@@ -152,11 +151,11 @@ public final class KeepupStateMachine {
                                  KeepupConfig config,
                                  KeepupCallbacks callbacks) {
         config.executor().submit(() -> {
-            log.accept("Creating installer");
+            log.log("Creating installer");
             try {
                 var installer = InstallerCreator.create(config);
                 if (zip.delete()) {
-                    log.accept("Upgrade successful");
+                    log.log("Upgrade successful");
                     callbacks.onDone.accept(installer);
                 } else {
                     endWithError(new KeepupException(CANNOT_REMOVE_UPGRADE_ZIP,
@@ -175,17 +174,17 @@ public final class KeepupStateMachine {
     }
 
     private void endEarly() {
-        log.accept("DONE");
+        log.log("DONE");
         try {
             callbacks.onDone.accept(null);
         } catch (Exception e) {
-            log.accept("ERROR: " + e);
+            log.log("ERROR: " + e);
             callbacks.onError.accept(new KeepupException(DONE_CALLBACK, e));
         }
     }
 
     private void endWithError(KeepupException error) {
-        log.accept("ERROR: " + error);
+        log.log("ERROR: " + error);
         try {
             callbacks.onError.accept(error);
         } finally {

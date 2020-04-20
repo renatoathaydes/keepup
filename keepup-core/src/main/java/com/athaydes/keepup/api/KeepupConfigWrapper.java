@@ -1,8 +1,8 @@
 package com.athaydes.keepup.api;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 
 /**
  * Not a public class.
@@ -12,14 +12,14 @@ final class KeepupConfigWrapper implements KeepupConfig {
     private final File appHome;
     private final AppDistributor distributor;
     private final ExecutorService executorService;
-    private final Consumer<String> logger;
+    private final Path keepupLog;
 
     public KeepupConfigWrapper(KeepupConfig delegate) {
         this.appName = delegate.appName();
         this.appHome = delegate.appHome();
         this.distributor = delegate.distributor();
         this.executorService = delegate.executor();
-        this.logger = delegate.logger();
+        this.keepupLog = delegate.keepupLog();
     }
 
     @Override
@@ -43,7 +43,7 @@ final class KeepupConfigWrapper implements KeepupConfig {
     }
 
     @Override
-    public Consumer<String> logger() {
-        return logger;
+    public Path keepupLog() {
+        return keepupLog;
     }
 }

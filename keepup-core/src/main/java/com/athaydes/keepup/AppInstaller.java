@@ -7,12 +7,29 @@ import java.util.Arrays;
 
 final class AppInstaller {
 
-    public static void main(String[] args) throws Exception {
-        var installerArgs = InstallerArgs.of(args);
+    public static void main(String[] args) {
+        InstallerArgs installerArgs;
+        try {
+            installerArgs = InstallerArgs.of(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
 
-        File currVersion = installerArgs.getCurrentVersion().toFile();
-        File newVersion = installerArgs.getNewVersion().toFile();
-        String appName = installerArgs.getAppName();
+        var log = new KeepupLogger(installerArgs.getKeepupLog());
+
+        try {
+            run(installerArgs);
+            log.log("AppInstaller successful");
+        } catch (Exception e) {
+            log.log("ERROR: AppInstaller - " + e);
+        }
+    }
+
+    private static void run(InstallerArgs installerArgs) throws Exception {
+        var currVersion = installerArgs.getCurrentVersion().toFile();
+        var newVersion = installerArgs.getNewVersion().toFile();
+        var appName = installerArgs.getAppName();
 
         IoUtils.deleteContents(currVersion);
 

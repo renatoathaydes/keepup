@@ -19,39 +19,39 @@ final class InstallerCreator {
     static UpgradeInstaller create(KeepupConfig config) {
         var currVersion = currentApp().toPath();
         var newVersion = unpackedApp(config.appHome()).toPath();
-        return new Installer(config, new InstallerArgs(currVersion, newVersion, config.appName(), false));
+        return new Installer(config, new InstallerArgs(currVersion, newVersion,
+                config.keepupLog(), config.appName(), false));
     }
 
     private static class Installer implements UpgradeInstaller {
         private final AtomicBoolean done = new AtomicBoolean(false);
-        private final KeepupConfig config;
+        private final KeepupLogger log;
         private final InstallerArgs args;
 
         public Installer(KeepupConfig config,
                          InstallerArgs installerArgs) {
-            this.config = config;
+            this.log = new KeepupLogger(config.keepupLog());
             this.args = installerArgs;
         }
 
         @Override
         public void launchUpgradedAppWithoutExiting() {
             checkNotDone();
-            config.logger().accept("Invoking installer");
+            log.log("Invoking installer");
             invokeInstaller(true);
-            config.logger().accept("Installer successful");
         }
 
         @Override
         public void quitAndLaunchUpgradedApp() {
             launchUpgradedAppWithoutExiting();
-            config.logger().accept("Exiting process");
+            log.log("Exiting process");
             System.exit(0);
         }
 
         @Override
         public void installUpgradeOnExit() {
             checkNotDone();
-            config.logger().accept("Will run installer on JVM shutdown");
+            log.log("Will run installer on JVM shutdown");
             Runtime.getRuntime().addShutdownHook(new Thread(() -> invokeInstaller(false)));
         }
 
@@ -70,10 +70,10 @@ final class InstallerCreator {
                         .start()
                         .waitFor();
                 if (exitCode != 0) {
-                    config.logger().accept("ERROR: Installer exited with " + exitCode);
+                    log.log("ERROR: Installer exited with " + exitCode);
                 }
             } catch (IOException | InterruptedException e) {
-                config.logger().accept("ERROR: " + e);
+                log.log("ERROR: " + e);
             }
         }
 
