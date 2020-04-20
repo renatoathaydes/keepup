@@ -19,19 +19,19 @@ final class AppInstaller {
         var log = new KeepupLogger(installerArgs.getKeepupLog());
 
         try {
-            run(installerArgs);
+            run(installerArgs, log);
             log.log("AppInstaller successful");
         } catch (Exception e) {
             log.log("ERROR: AppInstaller - " + e);
         }
     }
 
-    private static void run(InstallerArgs installerArgs) throws Exception {
+    private static void run(InstallerArgs installerArgs, KeepupLogger log) throws Exception {
         var currVersion = installerArgs.getCurrentVersion().toFile();
         var newVersion = installerArgs.getNewVersion().toFile();
         var appName = installerArgs.getAppName();
 
-        deleteWithRetries(currVersion);
+        deleteWithRetries(currVersion, log);
 
         IoUtils.copy(newVersion, currVersion);
 
@@ -57,15 +57,17 @@ final class AppInstaller {
 
     // the current installation may be hard to delete while the app is still running, so
     // we need to try a few times before giving up as that allows for the current process to die.
-    private static void deleteWithRetries(File currVersion) throws IOException {
+    private static void deleteWithRetries(File currVersion,
+                                          KeepupLogger log) throws IOException {
         int tries = 10;
         while (true) {
             tries--;
             try {
                 IoUtils.deleteContents(currVersion);
-                // success!!
+                log.log("AppInstaller deleted old installation");
                 return;
             } catch (IOException e) {
+                log.log("AppInstaller failed to delete old installation. Tries left: " + tries);
                 if (tries == 0) {
                     throw e;
                 }
