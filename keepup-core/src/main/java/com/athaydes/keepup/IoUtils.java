@@ -29,7 +29,7 @@ final class IoUtils {
                         "but a file: " + destinationDir);
             }
             if (!destinationDir.mkdirs()) {
-                throw new IllegalStateException("upgrade destination directory cannot be created: " + destinationDir);
+                throw new IOException("upgrade destination directory cannot be created: " + destinationDir);
             }
         }
 
@@ -46,7 +46,7 @@ final class IoUtils {
                 var file = fileFor(zipEntry, destinationDir, topEntryName);
                 if (isDirectory(zipEntry)) {
                     var ok = file.mkdir();
-                    if (!ok) throw new IllegalStateException("Cannot create new directory: " + file);
+                    if (!ok) throw new IOException("Cannot create new directory: " + file);
                 } else {
                     Files.copy(zip, file.toPath());
                 }
@@ -76,21 +76,21 @@ final class IoUtils {
 
     static void deleteContents(File dir) throws IOException {
         var files = dir.listFiles();
-        if (files == null) throw new IllegalStateException("Not a directory: " + dir);
+        if (files == null) throw new IllegalArgumentException("Not a directory: " + dir);
 
         for (File file : files) {
             Files.walkFileTree(file.toPath(), new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     var ok = file.toFile().delete();
-                    if (!ok) throw new IllegalStateException("Unable to delete file: " + file);
+                    if (!ok) throw new IOException("Unable to delete file: " + file);
                     return super.visitFile(file, attrs);
                 }
 
                 @Override
                 public FileVisitResult postVisitDirectory(Path directory, IOException exc) throws IOException {
                     var ok = directory.toFile().delete();
-                    if (!ok) throw new IllegalStateException("Unable to delete directory: " + directory);
+                    if (!ok) throw new IOException("Unable to delete directory: " + directory);
                     return super.postVisitDirectory(directory, exc);
                 }
             });
@@ -110,7 +110,7 @@ final class IoUtils {
                         if (!newDir.exists()) {
                             var ok = newDir.mkdir();
                             if (!ok) {
-                                throw new IllegalStateException("Cannot create directory " + newDir);
+                                throw new IOException("Cannot create directory " + newDir);
                             }
                         }
                     }
