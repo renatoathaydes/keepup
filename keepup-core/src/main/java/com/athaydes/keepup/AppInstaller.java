@@ -28,13 +28,23 @@ final class AppInstaller {
             if (!new File(currVersion, "bin/" + appName).canExecute()) {
                 throw new RuntimeException("Cannot execute app launcher: " + currVersion + "/bin/" + appName);
             }
-            var launcher = new File(currVersion, "bin/" + appName).getAbsolutePath();
 
-            new ProcessBuilder(launcher)
+            new ProcessBuilder(getLauncher(currVersion, appName))
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
                     .start();
         }
+    }
+
+    private static String getLauncher(File currVersion, String appName) {
+        String os = System.getProperty("os.name", "");
+        String launcherFile;
+        if (os.contains("Windows")) {
+            launcherFile = "bin\\" + appName + ".bat";
+        } else {
+            launcherFile = "bin/" + appName;
+        }
+        return new File(currVersion, launcherFile).getAbsolutePath();
     }
 
 }
