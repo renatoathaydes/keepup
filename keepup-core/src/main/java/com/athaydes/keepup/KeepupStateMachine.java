@@ -49,7 +49,7 @@ public final class KeepupStateMachine {
                 }
             }
             var appLocation = currentApp();
-            if (looksLikeJlinkApp(appLocation, config)) {
+            if (looksLikeJlinkApp(appLocation, config.appName())) {
                 checkForUpdate(config, callbacks);
             } else {
                 endWithError(new KeepupException(CURRENT_NOT_JLINK_APP, "Home: " + appLocation));
@@ -134,7 +134,7 @@ public final class KeepupStateMachine {
             log.log("Unpacking update");
             try {
                 var newVersionDir = IoUtils.unpack(zip, config.appHome());
-                if (looksLikeJlinkApp(newVersionDir, config)) {
+                if (looksLikeJlinkApp(newVersionDir, config.appName())) {
                     setFilePermissions(newVersionDir, config.appName());
                     createInstaller(zip, config, callbacks);
                 } else {

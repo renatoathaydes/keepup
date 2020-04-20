@@ -1,7 +1,5 @@
 package com.athaydes.keepup;
 
-import com.athaydes.keepup.api.KeepupConfig;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -127,12 +125,27 @@ final class IoUtils {
         }
     }
 
-    public static boolean looksLikeJlinkApp(File rootDir, KeepupConfig config) {
+    public static boolean isWindowsOs() {
+        String os = System.getProperty("os.name", "");
+        return os.contains("Windows");
+    }
+
+    public static String launcher(File homeDir, String appName, boolean isWindows) {
+        String launcherFile;
+        if (isWindows) {
+            launcherFile = "bin\\" + appName + ".bat";
+        } else {
+            launcherFile = "bin/" + appName;
+        }
+        return new File(homeDir, launcherFile).getAbsolutePath();
+    }
+
+    public static boolean looksLikeJlinkApp(File rootDir, String appName) {
         if (rootDir.isDirectory()) {
             var children = rootDir.list();
             if (children != null && children.length >= 4) {
                 if (Set.of(children).containsAll(Set.of("bin", "conf", "legal", "lib"))) {
-                    return new File(rootDir, "bin/" + config.appName()).isFile();
+                    return new File(launcher(rootDir, appName, isWindowsOs())).isFile();
                 }
             }
         }

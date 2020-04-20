@@ -3,7 +3,7 @@ package com.athaydes.keepup;
 import com.athaydes.keepup.api.InstallerArgs;
 
 import java.io.File;
-import java.util.Arrays;
+import java.io.IOException;
 
 final class AppInstaller {
 
@@ -31,37 +31,51 @@ final class AppInstaller {
         var newVersion = installerArgs.getNewVersion().toFile();
         var appName = installerArgs.getAppName();
 
-        IoUtils.deleteContents(currVersion);
-
-        String[] children = currVersion.list();
-        if (children != null && children.length != 0) {
-            throw new RuntimeException("Did not delete everything, error! " + Arrays.toString(children));
-        }
+        deleteWithRetries(currVersion);
 
         IoUtils.copy(newVersion, currVersion);
-        IoUtils.setFilePermissions(currVersion, appName);
+
+        var isWindows = IoUtils.isWindowsOs();
+
+        if (!isWindows) {
+            IoUtils.setFilePermissions(currVersion, appName);
+        }
 
         if (installerArgs.isRelaunch()) {
-            if (!new File(currVersion, "bin/" + appName).canExecute()) {
-                throw new RuntimeException("Cannot execute app launcher: " + currVersion + "/bin/" + appName);
+            var launcher = IoUtils.launcher(currVersion, appName, isWindows);
+
+            if (!new File(launcher).canExecute()) {
+                throw new RuntimeException("Cannot execute app launcher: " + launcher);
             }
 
-            new ProcessBuilder(getLauncher(currVersion, appName))
+            new ProcessBuilder(launcher)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
                     .start();
         }
     }
 
-    private static String getLauncher(File currVersion, String appName) {
-        String os = System.getProperty("os.name", "");
-        String launcherFile;
-        if (os.contains("Windows")) {
-            launcherFile = "bin\\" + appName + ".bat";
-        } else {
-            launcherFile = "bin/" + appName;
+    // the current installation may be hard to delete while the app is still running, so
+    // we need to try a few times before giving up as that allows for the current process to die.
+    private static void deleteWithRetries(File currVersion) throws IOException {
+        int tries = 10;
+        while (true) {
+            tries--;
+            try {
+                IoUtils.deleteContents(currVersion);
+                // success!!
+                return;
+            } catch (IOException e) {
+                if (tries == 0) {
+                    throw e;
+                }
+                try {
+                    //noinspection BusyWait
+                    Thread.sleep(500L);
+                } catch (InterruptedException ignore) {
+                }
+            }
         }
-        return new File(currVersion, launcherFile).getAbsolutePath();
     }
 
 }
