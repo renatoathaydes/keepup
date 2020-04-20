@@ -57,7 +57,7 @@ task jlink(type: Exec) {
     def options = [
             '--module-path', mods,
             '--vm=server', // options: client|server|minimal|all
-            '--add-modules', 'javafx.controls,jdk.crypto.ec,keepup.examples.javafx',
+            '--add-modules', 'javafx.controls,keepup.examples.javafx',
             '--output', image,
             '--launcher', 'fx_sample=keepup.examples.javafx/keepup.examples.javafx.JavaFxSample',
             '--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']

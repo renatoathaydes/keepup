@@ -9,11 +9,15 @@ Label {
 }
 
 Text {
+    -fx-font-size: 20;
+    -fx-fill: lightgreen;
+}
+
+Text.banner {
     -fx-font-size: 40;
     -fx-fill: linear-gradient(to top, limegreen, white);
 }
 
-.progress-bar > .bar {
-    -fx-background-color: limegreen;
-    -fx-border-style: none;
+.error {
+    -fx-fill: orange;
 }
