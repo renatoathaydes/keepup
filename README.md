@@ -1,6 +1,6 @@
 # Keepup
 
-![Latest Build](https://github.com/renatoathaydes/keepup/workflows/Java%20CI%20with%20Gradle/badge.svg)
+![Keepup Tests](https://github.com/renatoathaydes/keepup/workflows/Keepup%20Tests/badge.svg)
 
 Keepup is a library to allow Java 11+ applications to self-update.
 
