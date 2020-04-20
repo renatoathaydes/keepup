@@ -8,6 +8,7 @@ import com.athaydes.keepup.api.UpgradeInstaller;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -64,13 +65,22 @@ final class InstallerCreator {
             ).toArray(String[]::new);
 
             try {
-                var exitCode = new ProcessBuilder(command)
+                var proc = new ProcessBuilder(command)
                         .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                         .redirectError(ProcessBuilder.Redirect.DISCARD)
-                        .start()
-                        .waitFor();
-                if (exitCode != 0) {
-                    log.log("ERROR: Installer exited with " + exitCode);
+                        .start();
+
+                // we try to wait until the process is done as in some platforms, the running software
+                // can be replaced in place, so the process would probably terminate in time... but in
+                // others (Windows) we must kill the current process before installation completes.
+                var done = proc.waitFor(2, TimeUnit.SECONDS);
+
+                if (done) {
+                    if (proc.exitValue() != 0) {
+                        log.log("ERROR: Installer exited with " + proc.exitValue());
+                    }
+                } else {
+                    log.log("Installer did not end in time");
                 }
             } catch (IOException | InterruptedException e) {
                 log.log("ERROR: " + e);
