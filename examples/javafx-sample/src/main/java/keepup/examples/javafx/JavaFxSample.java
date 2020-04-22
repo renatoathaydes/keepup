@@ -1,6 +1,7 @@
 package keepup.examples.javafx;
 
 import com.athaydes.keepup.api.AppDistributor;
+import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
 import javafx.application.Application;
@@ -110,7 +111,7 @@ class SampleConfig implements KeepupConfig {
     }
 
     @Override
-    public AppDistributor distributor() {
+    public AppDistributor<?> distributor() {
         // silly implementation that updates every time to the same version
         return new SampleDistributor();
     }
@@ -126,12 +127,12 @@ class SampleConfig implements KeepupConfig {
     }
 }
 
-class SampleDistributor implements AppDistributor {
+class SampleDistributor implements AppDistributor<AppVersion> {
 
     private final Set<String> versions = new HashSet<>();
 
     @Override
-    public Optional<String> findLatestVersion() {
+    public Optional<AppVersion> findLatestVersion() {
         // any file in the build directory with a name like "update-.*.zip" is treated as an update
         var files = new File("build").listFiles();
         if (files != null) for (var file : files) {
@@ -139,7 +140,7 @@ class SampleDistributor implements AppDistributor {
             if (fname.matches("update-.*\\.zip")) {
                 String version = fname.substring("update-".length(), fname.length() - 4);
                 if (versions.add(version)) {
-                    return Optional.of(version);
+                    return Optional.of(AppVersion.ofString(version));
                 }
             }
         }
@@ -147,7 +148,7 @@ class SampleDistributor implements AppDistributor {
     }
 
     @Override
-    public File download(String version) {
-        return new File("build", "update-" + version + ".zip");
+    public File download(AppVersion version) {
+        return new File("build", "update-" + version.name() + ".zip");
     }
 }

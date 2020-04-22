@@ -33,7 +33,7 @@ final class KeepupConfigWrapper implements KeepupConfig {
     }
 
     @Override
-    public AppDistributor distributor() {
+    public AppDistributor<?> distributor() {
         return distributor;
     }
 

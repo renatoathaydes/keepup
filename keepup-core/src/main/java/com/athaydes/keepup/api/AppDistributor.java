@@ -5,8 +5,12 @@ import java.util.Optional;
 
 /**
  * An AppDistributor defines how the application finds and downloads new releases.
+ *
+ * @param <V> type of version object, which can contain extra information that the
+ *            {@link AppDistributor#download(AppVersion)} method needs.
+ * @see AppVersion
  */
-public interface AppDistributor {
+public interface AppDistributor<V extends AppVersion> {
     /**
      * Find the latest version of the application and return it if it is not the same as the
      * currently running application.
@@ -14,7 +18,7 @@ public interface AppDistributor {
      * @return the new version of the application, if any
      * @throws Exception on error
      */
-    Optional<String> findLatestVersion() throws Exception;
+    Optional<V> findLatestVersion() throws Exception;
 
     /**
      * Download or obtain a zip file for the given version of the application.
@@ -24,5 +28,5 @@ public interface AppDistributor {
      * under which the image resides.
      * @throws Exception on error
      */
-    File download(String version) throws Exception;
+    File download(V version) throws Exception;
 }

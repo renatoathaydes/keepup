@@ -1,6 +1,7 @@
 package keepup.examples.simple;
 
 import com.athaydes.keepup.api.AppDistributor;
+import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
 
@@ -70,7 +71,7 @@ class SimpleConfig implements KeepupConfig {
     }
 
     @Override
-    public AppDistributor distributor() {
+    public AppDistributor<?> distributor() {
         // silly implementation that updates every time to the same version
         return new SimpleAppDistributor();
     }
@@ -86,16 +87,18 @@ class SimpleConfig implements KeepupConfig {
     }
 }
 
-class SimpleAppDistributor implements AppDistributor {
+class SimpleAppDistributor implements AppDistributor<AppVersion> {
     final File newVersionZip = new File("build", "simple-app.zip");
 
     @Override
-    public Optional<String> findLatestVersion() {
-        return newVersionZip.isFile() ? Optional.of("v2") : Optional.empty();
+    public Optional<AppVersion> findLatestVersion() {
+        return newVersionZip.isFile()
+                ? Optional.of(AppVersion.ofString("v2"))
+                : Optional.empty();
     }
 
     @Override
-    public File download(String version) {
+    public File download(AppVersion version) {
         // no need to download, just expect a local file to contain the new version
         return newVersionZip;
     }

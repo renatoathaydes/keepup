@@ -30,7 +30,7 @@ public interface KeepupConfig {
     /**
      * @return an {@link AppDistributor} for obtaining application upgrades.
      */
-    AppDistributor distributor();
+    AppDistributor<?> distributor();
 
     /**
      * @return an {@link ExecutorService} that will be used to run all {@link Keepup} callbacks.

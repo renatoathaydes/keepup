@@ -66,24 +66,27 @@ An application must create an instance of the `Keepup` class to use Keepup. This
 
 #### Implement `com.athaydes.keepup.api.AppDistributor`
 
-> In the future, there will be some default implementations using common distribution channels,
-> such as JCenter and GitHub Releases.
+> Currently, Keepup has one ready-to-use implementation of `AppDistributor` in the 
+> [keepup-github](keepup-github) module, which uses the GitHub Releases API to find and download
+> new versions. In the future, there should be more implementations, like for Maven Central or JCenter.
 
 ```java
 import com.athaydes.keepup.api.AppDistributor;
+import com.athaydes.keepup.api.AppVersion;
+import java.io.File;
 import java.util.Optional;
 
-class MyAppDistributor implements AppDistributor {
+class MyAppDistributor implements AppDistributor<AppVersion> {
 
     @Override
-    public Optional<String> findLatestVersion() throws Exception {
+    public Optional<AppVersion> findLatestVersion() throws Exception {
         // fetch the new version from somewhere...
         // only return non-empty if the version is not the same as the current one!
-        return Optional.of("v2");
+        return Optional.of(AppVersion.ofString("v2"));
     }
 
     @Override
-    public File download(String version) throws Exception {
+    public File download(AppVersion version) throws Exception {
         // download the zip file for the new version...
         return new File("my_app.zip");
     }
@@ -93,6 +96,7 @@ class MyAppDistributor implements AppDistributor {
 #### Implement `com.athaydes.keepup.api.KeepupConfig`
 
 ```java
+import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.KeepupConfig;
 
 class TrivialConfig implements KeepupConfig {
@@ -103,7 +107,7 @@ class TrivialConfig implements KeepupConfig {
     }
 
     @Override
-    public AppDistributor distributor() {
+    public AppDistributor<?> distributor() {
         return new MyAppDistributor();
     }
 }

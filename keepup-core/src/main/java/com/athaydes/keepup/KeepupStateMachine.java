@@ -1,11 +1,14 @@
 package com.athaydes.keepup;
 
+import com.athaydes.keepup.api.AppDistributor;
+import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.KeepupConfig;
 import com.athaydes.keepup.api.KeepupException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.athaydes.keepup.IoUtils.currentApp;
@@ -44,29 +47,35 @@ public final class KeepupStateMachine {
                 if (unpackedApp.isDirectory()) {
                     // we have just updated and not cleaned up yet
                     cleanupPreviousUpdate(unpackedApp);
-                    noUpdate(callbacks);
+                    noUpdate();
                     return;
                 }
             }
             var appLocation = currentApp();
             if (looksLikeJlinkApp(appLocation, config.appName())) {
-                checkForUpdate(config, callbacks);
+                checkForUpdate();
             } else {
                 endWithError(new KeepupException(CURRENT_NOT_JLINK_APP, "Home: " + appLocation));
             }
         });
     }
 
-    private void checkForUpdate(KeepupConfig config, KeepupCallbacks callbacks) {
-        log.log("Checking for update");
-        try {
-            config.distributor().findLatestVersion()
-                    .ifPresentOrElse(
-                            v -> updateTo(v, config, callbacks),
-                            () -> noUpdate(callbacks));
-        } catch (Exception e) {
-            endWithError(new KeepupException(LATEST_VERSION_CHECK, e));
-        }
+    private void checkForUpdate() {
+        config.executor().submit(() -> {
+            log.log("Checking for update");
+            try {
+                findVersion(config.distributor());
+            } catch (Exception e) {
+                endWithError(new KeepupException(LATEST_VERSION_CHECK, e));
+            }
+        });
+    }
+
+    private <V extends AppVersion> void findVersion(
+            AppDistributor<V> distributor) throws Exception {
+        distributor.findLatestVersion().ifPresentOrElse(v -> {
+            invokeDownload(v.name(), () -> distributor.download(v));
+        }, this::noUpdate);
     }
 
     private void cleanupPreviousUpdate(File unpackedApp) {
@@ -80,7 +89,7 @@ public final class KeepupStateMachine {
         }
     }
 
-    private void noUpdate(KeepupCallbacks callbacks) {
+    private void noUpdate() {
         log.log("No update available");
         try {
             callbacks.onNoUpdate.run();
@@ -90,24 +99,19 @@ public final class KeepupStateMachine {
         }
     }
 
-    private void updateTo(String newVersion,
-                          KeepupConfig config,
-                          KeepupCallbacks callbacks) {
+    private void invokeDownload(String newVersion, Callable<File> download) {
         config.executor().submit(() -> {
             log.log("Downloading version " + newVersion);
             try {
-                var zip = config.distributor().download(newVersion);
-                verifyUpdate(newVersion, zip, config, callbacks);
+                var zip = download.call();
+                verifyUpdate(newVersion, zip);
             } catch (Exception e) {
                 endWithError(new KeepupException(DOWNLOAD, e));
             }
         });
     }
 
-    private void verifyUpdate(String newVersion,
-                              File zip,
-                              KeepupConfig config,
-                              KeepupCallbacks callbacks) {
+    private void verifyUpdate(String newVersion, File zip) {
         config.executor().submit(() -> {
             log.log("Verifying update");
             try {
@@ -115,7 +119,7 @@ public final class KeepupStateMachine {
                     if (error != null) {
                         endWithError(new KeepupException(VERIFY_UPDATE, error));
                     } else if (continueUpdate) {
-                        unpackNewVersion(zip, config, callbacks);
+                        unpackNewVersion(zip);
                     } else {
                         log.log("Update rejected");
                         endEarly();
@@ -127,16 +131,14 @@ public final class KeepupStateMachine {
         });
     }
 
-    private void unpackNewVersion(File zip,
-                                  KeepupConfig config,
-                                  KeepupCallbacks callbacks) {
+    private void unpackNewVersion(File zip) {
         config.executor().submit(() -> {
             log.log("Unpacking update");
             try {
                 var newVersionDir = IoUtils.unpack(zip, config.appHome());
                 if (looksLikeJlinkApp(newVersionDir, config.appName())) {
                     setFilePermissions(newVersionDir, config.appName());
-                    createInstaller(zip, config, callbacks);
+                    createInstaller(zip);
                 } else {
                     endWithError(new KeepupException(UPGRADE_NOT_JLINK_APP,
                             "Upgrade location: " + newVersionDir));
@@ -147,9 +149,7 @@ public final class KeepupStateMachine {
         });
     }
 
-    private void createInstaller(File zip,
-                                 KeepupConfig config,
-                                 KeepupCallbacks callbacks) {
+    private void createInstaller(File zip) {
         config.executor().submit(() -> {
             log.log("Creating installer");
             try {

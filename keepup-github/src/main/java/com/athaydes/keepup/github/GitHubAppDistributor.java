@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class GitHubAppDistributor implements AppDistributor {
+public class GitHubAppDistributor implements AppDistributor<GithubAppVersion> {
     private static final String GH_URL = "https://api.github.com/graphql";
 
     private static final String QUERY = "{\"query\":\"query{repository(owner:\\\"%s\\\",name:\\\"%s\\\"){" +
@@ -22,8 +22,6 @@ public class GitHubAppDistributor implements AppDistributor {
     private final String query;
     private final Predicate<String> isNewVersion;
     private final Function<GitHubResponse, GitHubAsset> selectDownloadAsset;
-
-    private volatile GitHubResponse latestResponse;
 
     public GitHubAppDistributor(String accessToken,
                                 String owner,
@@ -41,7 +39,7 @@ public class GitHubAppDistributor implements AppDistributor {
     }
 
     @Override
-    public Optional<String> findLatestVersion() throws Exception {
+    public Optional<GithubAppVersion> findLatestVersion() throws Exception {
         var connection = Http.connect(new URL(GH_URL), "POST");
         connection.setDoOutput(true);
         var payload = query.getBytes(StandardCharsets.UTF_8);
@@ -55,8 +53,7 @@ public class GitHubAppDistributor implements AppDistributor {
                 var response = GitHubResponse.fromGraphQL(connection.getInputStream());
                 var latestVersion = response.getLatestVersion();
                 if (isNewVersion.test(latestVersion)) {
-                    latestResponse = response;
-                    return Optional.of(latestVersion);
+                    return Optional.of(new GithubAppVersion(response));
                 }
             }
         } finally {
@@ -66,11 +63,8 @@ public class GitHubAppDistributor implements AppDistributor {
     }
 
     @Override
-    public File download(String version) throws Exception {
-        var response = latestResponse;
-        if (response == null) {
-            throw new IllegalStateException("latestVersion is not known");
-        }
+    public File download(GithubAppVersion version) throws Exception {
+        var response = version.getResponse();
         var asset = selectDownloadAsset.apply(response);
         var connection = Http.connect(asset.getUri().toURL(), "GET");
         try {
