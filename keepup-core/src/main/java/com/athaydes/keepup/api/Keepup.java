@@ -17,6 +17,9 @@ import java.util.function.Consumer;
  */
 public final class Keepup implements Closeable, AutoCloseable {
 
+    /**
+     * A callback that does not do anything.
+     */
     public static final Runnable NO_OP = () -> {
     };
 
@@ -31,13 +34,12 @@ public final class Keepup implements Closeable, AutoCloseable {
     public Keepup(KeepupConfig config) {
         this.config = new KeepupConfigWrapper(config);
         onUpdate = (v, f) -> CompletableFuture.completedFuture(true);
-        onNoUpdate = () -> {
-        };
+        onNoUpdate = NO_OP;
         onError = Throwable::printStackTrace;
-        doneWithoutUpdate = () -> config.executor().shutdown();
+        doneWithoutUpdate = this::close;
         doneWithUpdate = (installer) -> {
             installer.installUpgradeOnExit();
-            config.executor().shutdown();
+            close();
         };
 
         // app home must exist to avoid errors later
