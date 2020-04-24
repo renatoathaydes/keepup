@@ -4,6 +4,7 @@ import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.KeepupConfig;
 import com.athaydes.keepup.api.KeepupException;
+import com.athaydes.keepup.api.UpgradeInstaller;
 
 import java.io.File;
 import java.io.IOException;
@@ -122,6 +123,7 @@ public final class KeepupStateMachine {
                         unpackNewVersion(zip);
                     } else {
                         log.log("Update rejected");
+                        zip.delete();
                         endEarly();
                     }
                 });
@@ -156,7 +158,7 @@ public final class KeepupStateMachine {
                 var installer = InstallerCreator.create(config);
                 if (zip.delete()) {
                     log.log("Upgrade successful");
-                    callbacks.onDone.accept(installer);
+                    success(installer);
                 } else {
                     endWithError(new KeepupException(CANNOT_REMOVE_UPGRADE_ZIP,
                             "Location: " + zip));
@@ -174,12 +176,13 @@ public final class KeepupStateMachine {
     }
 
     private void endEarly() {
-        log.log("DONE");
         try {
-            callbacks.onDone.accept(null);
+            callbacks.doneWithoutUpdate.run();
         } catch (Exception e) {
             log.log("ERROR: " + e);
             callbacks.onError.accept(new KeepupException(DONE_CALLBACK, e));
+        } finally {
+            log.log("DONE");
         }
     }
 
@@ -188,7 +191,18 @@ public final class KeepupStateMachine {
         try {
             callbacks.onError.accept(error);
         } finally {
-            callbacks.onDone.accept(null);
+            endEarly();
+        }
+    }
+
+    private void success(UpgradeInstaller installer) {
+        try {
+            callbacks.doneWithUpdate.accept(installer);
+        } catch (Exception e) {
+            log.log("ERROR: " + e);
+            callbacks.onError.accept(new KeepupException(DONE_CALLBACK, e));
+        } finally {
+            log.log("DONE");
         }
     }
 }

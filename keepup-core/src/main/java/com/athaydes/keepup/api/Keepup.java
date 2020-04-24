@@ -17,12 +17,16 @@ import java.util.function.Consumer;
  */
 public final class Keepup implements Closeable, AutoCloseable {
 
+    public static final Runnable NO_OP = () -> {
+    };
+
     private final KeepupConfig config;
 
     private volatile BiFunction<String, File, CompletableFuture<Boolean>> onUpdate;
     private volatile Runnable onNoUpdate;
     private volatile Consumer<KeepupException> onError;
-    private volatile Consumer<UpgradeInstaller> onDone;
+    private volatile Runnable doneWithoutUpdate;
+    private volatile Consumer<UpgradeInstaller> doneWithUpdate;
 
     public Keepup(KeepupConfig config) {
         this.config = new KeepupConfigWrapper(config);
@@ -30,10 +34,9 @@ public final class Keepup implements Closeable, AutoCloseable {
         onNoUpdate = () -> {
         };
         onError = Throwable::printStackTrace;
-        onDone = (installer) -> {
-            if (installer != null) {
-                installer.installUpgradeOnExit();
-            }
+        doneWithoutUpdate = () -> config.executor().shutdown();
+        doneWithUpdate = (installer) -> {
+            installer.installUpgradeOnExit();
             config.executor().shutdown();
         };
 
@@ -89,22 +92,22 @@ public final class Keepup implements Closeable, AutoCloseable {
     /**
      * Define what to do when an update check is done, whether successfully or not.
      * <p>
-     * This is similar to a {@code finally} block in a Java try-catch statement, as it will be called
-     * even when there is an error, or there is no update, or the update is aborted for any reason.
+     * This is similar to a {@code finally} block in a Java try-catch statement, as one of the given
+     * callbacks will be called even when there is an error, or there is no update, or the update is aborted for
+     * any reason.
      * <p>
-     * By default, this callback calls {@link UpgradeInstaller#installUpgradeOnExit()} if the
-     * upgrade was successful, then, regardless of whether or not the upgrade succeeded,
-     * closes this instance of {@link Keepup}.
+     * By default, the {@code doneWithUpdate} callback calls {@link UpgradeInstaller#installUpgradeOnExit()} and
+     * then closes this instance of {@link Keepup}. The {@code doneWithoutUpdate} callback only closes this instance
+     * of {@link Keepup}.
      *
-     * <b>The callback will receive {@code null} if the upgrade did not proceed successfully all the way to the end.</b>
-     * In other words, it will only receive a non-null {@link UpgradeInstaller} if the upgrade has been performed
-     * successfully.
-     *
-     * @param onDone callback
+     * @param doneWithoutUpdate callback called when an update check ended without an update, for whatever reason
+     * @param doneWithUpdate    callback called when an update check results in a successful update.
      * @return this
      */
-    public Keepup onDone(Consumer<UpgradeInstaller> onDone) {
-        this.onDone = Objects.requireNonNull(onDone);
+    public Keepup onDone(Runnable doneWithoutUpdate,
+                         Consumer<UpgradeInstaller> doneWithUpdate) {
+        this.doneWithoutUpdate = Objects.requireNonNull(doneWithoutUpdate);
+        this.doneWithUpdate = Objects.requireNonNull(doneWithUpdate);
         return this;
     }
 
@@ -116,7 +119,7 @@ public final class Keepup implements Closeable, AutoCloseable {
      * @return an {@link Updater} that can initiate checks for new releases.
      */
     public Updater createUpdater() {
-        return new Updater(config, onUpdate, onNoUpdate, onError, onDone);
+        return new Updater(config, onUpdate, onNoUpdate, onError, doneWithoutUpdate, doneWithUpdate);
     }
 
     /**

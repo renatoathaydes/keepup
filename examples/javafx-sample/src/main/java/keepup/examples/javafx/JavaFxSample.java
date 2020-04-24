@@ -4,6 +4,7 @@ import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
+import com.athaydes.keepup.api.UpgradeInstaller;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -82,13 +83,7 @@ public class JavaFxSample extends Application {
                         button("OK", dialog::hide));
                 dialog.show();
             });
-        }).onDone((installer) -> {
-            // the installer is only provided on a successful update...
-            // on errors or not-accepted updates, it would be null
-            if (installer != null) {
-                installer.quitAndLaunchUpgradedApp();
-            }
-        });
+        }).onDone(Keepup.NO_OP, UpgradeInstaller::quitAndLaunchUpgradedApp);
 
         var exec = (ScheduledExecutorService) keepup.getConfig().executor();
 

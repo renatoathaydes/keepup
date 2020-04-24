@@ -24,12 +24,8 @@ class TrivialApp {
 
         var keepup = new Keepup(new TrivialConfig());
 
-        keepup.onDone((installer) -> {
-            // the installer is only provided on a successful update...
-            // on errors or not-accepted updates, it would be null
-            if (installer != null) {
-                installer.quitAndLaunchUpgradedApp();
-            }
+        keepup.onDone(Keepup.NO_OP, (installer) -> {
+            installer.quitAndLaunchUpgradedApp();
 
             // close Keepup as we do not check for updates again
             keepup.close();

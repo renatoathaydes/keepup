@@ -23,15 +23,20 @@ public final class Updater {
                    BiFunction<String, File, CompletableFuture<Boolean>> onUpdate,
                    Runnable onNoUpdate,
                    Consumer<KeepupException> onError,
-                   Consumer<UpgradeInstaller> onDone) {
+                   Runnable doneWithoutUpdate,
+                   Consumer<UpgradeInstaller> doneWithUpdate) {
         this.config = config;
         this.callbacks = new KeepupCallbacks(
                 onUpdate,
                 onNoUpdate,
                 onError,
+                () -> {
+                    isUpdating.set(false);
+                    doneWithoutUpdate.run();
+                },
                 (installer) -> {
                     isUpdating.set(false);
-                    onDone.accept(installer);
+                    doneWithUpdate.accept(installer);
                 }
         );
     }
