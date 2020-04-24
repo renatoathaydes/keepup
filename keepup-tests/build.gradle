@@ -1,0 +1,217 @@
+import groovy.text.SimpleTemplateEngine
+import tests.KeepupTester
+
+import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
+import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
+
+plugins {
+    id 'java'
+}
+
+version '1.0-SNAPSHOT'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation project(':keepup-core')
+}
+
+def newVersion = project.version
+
+if (hasProperty('newVersion')) {
+    newVersion = getProperty('newVersion')
+    buildDir = file("build/${newVersion}")
+}
+
+def image = "${buildDir}/image"
+def bkupImage = "build/bkup-image"
+def mods = "${buildDir}/mods"
+
+task deps {
+    dependsOn jar
+    doLast {
+        copy {
+            from configurations.runtimeClasspath
+            from jar
+            into mods
+        }
+    }
+}
+
+task generateJavaSources { task ->
+    compileJava.dependsOn task
+    doLast {
+        def template = file('src/main/Version.java.template')
+        def generated = new SimpleTemplateEngine().createTemplate(template).make([VERSION: newVersion])
+        file('src/main/java/keepup/tests/Version.java').withWriter { w ->
+            generated.writeTo(w)
+        }
+    }
+}
+
+task jlink(type: Exec) {
+    dependsOn deps
+    inputs.dir('src')
+    outputs.dir(image)
+    def options = [
+            '--module-path', mods,
+            '--vm=server', // options: client|server|minimal|all
+            '--add-modules', 'com.athaydes.keepup.core,keepup.tests',
+            '--output', image,
+            '--launcher', 'tests=keepup.tests/keepup.tests.TestApp',
+            '--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    def jlink = System.getProperty('java.home') + '/bin/jlink'
+    commandLine([jlink] + options)
+    doFirst { new File(image).deleteDir() }
+}
+
+// where we package the image
+def packagedImage = file("build/test-app.image.zip")
+
+// where the TestApp expects updates (will be deleted on installation)
+def testAppDownloadFile = file("build/test-app.zip")
+
+task packageImage(type: Zip) {
+    dependsOn jlink
+    from image
+    into "tests-app"
+    include '**/*'
+    archiveName packagedImage.name
+    destinationDir packagedImage.parentFile
+}
+
+task backupImage(type: Copy) {
+    dependsOn packageImage
+    from image
+    into bkupImage
+}
+
+def gradlew = isFamily(FAMILY_WINDOWS) ? 'gradlew.bat' : './gradlew'
+
+task buildVersion2(type: Exec) {
+    workingDir rootDir
+    commandLine gradlew, ':keepup-tests:packageImage', '-PnewVersion=2.0'
+}
+
+def restoreImageBackup = {
+    file(image).deleteDir()
+    copy {
+        from bkupImage
+        into image
+    }
+}
+
+def tester = new KeepupTester(project, 'tests', packagedImage, testAppDownloadFile)
+
+task testWithoutUpdateAndCallbacks {
+    dependsOn jlink
+    doFirst {
+        tester.reset()
+    }
+    doLast {
+        tester.envVars = [EXIT_AFTER_MS: 500]
+        tester.exec()
+        tester.verifyProcessExitCode(0, 5000L)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs('TestApp version 1.0-SNAPSHOT\nExiting\n')
+    }
+}
+
+task testWithoutUpdateWithCallbacks {
+    dependsOn jlink
+    doFirst {
+        tester.reset()
+    }
+    doLast {
+        tester.envVars = [EXIT_AFTER_MS: 500, LOG_ERRORS: true, LOG_NO_UPDATE: true, ON_DONE: 'QUIT_AND_LAUNCH']
+        tester.exec()
+        tester.verifyProcessExitCode(0, 5000L)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs('TestApp version 1.0-SNAPSHOT\nNo update\nExiting\n')
+    }
+}
+
+task testWithUpdateAndNoCallbacks {
+    dependsOn jlink, buildVersion2, backupImage
+    doFirst {
+        tester.reset()
+        tester.makeUpdateAvailable()
+    }
+    doLast {
+        tester.envVars = [EXIT_AFTER_MS: 1000, NEW_VERSION: '2.0']
+        def startTime = System.currentTimeMillis()
+        tester.exec()
+        tester.verifyProcessExitCode(0, 7000L)
+        def totalRuntime = System.currentTimeMillis() - startTime
+        assert totalRuntime >= 1000: 'process exited before time when app closed Keepup'
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs('TestApp version 1.0-SNAPSHOT\nExiting\n')
+
+        // on restart, a new version should run
+        tester.reset()
+        tester.cleanup = restoreImageBackup
+        tester.exec()
+        tester.verifyProcessExitCode(0, 5000L)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs('TestApp version 2.0\nExiting\n')
+
+        assert !testAppDownloadFile.isFile(): 'The update download should be deleted after installation'
+    }
+}
+
+task testWithUpdateAndCallbacks {
+    dependsOn jlink, buildVersion2, backupImage
+    doFirst {
+        tester.reset()
+        tester.makeUpdateAvailable()
+        tester.cleanup = restoreImageBackup
+    }
+    doLast {
+        tester.envVars = [EXIT_AFTER_MS: 2000, NEW_VERSION: '2.0', LOG_ERRORS: true, LOG_NO_UPDATE: true, ON_DONE: 'ONLY_LAUNCH']
+        def startTime = System.currentTimeMillis()
+        tester.exec()
+        tester.verifyProcessExitCode(0, 5000L)
+        def totalRuntime = System.currentTimeMillis() - startTime
+        assert totalRuntime >= 2000: 'process exited before time when app closed Keepup'
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs('TestApp version 1.0-SNAPSHOT\nTestApp version 2.0\nNo update\nExiting\nExiting\n')
+
+        assert !testAppDownloadFile.isFile(): 'The update download should be deleted after installation'
+    }
+}
+
+task testWithUpdateRejected {
+    dependsOn jlink, buildVersion2
+    doFirst {
+        tester.reset()
+        tester.makeUpdateAvailable()
+        tester.cleanup = restoreImageBackup
+    }
+    doLast {
+        tester.envVars = [NEW_VERSION       : '2.0', LOG_ERRORS: true, LOG_NO_UPDATE: true,
+                          LOG_DONE_NO_UPDATE: true, ACCEPT_VERSION: false, ON_DONE: 'QUIT_AND_LAUNCH']
+        tester.exec()
+        tester.verifyProcessExitCode(0, 5000L)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs('TestApp version 1.0-SNAPSHOT\nDone without update\nExiting\n')
+
+        assert !testAppDownloadFile.isFile(): 'The update download should be deleted after rejection'
+    }
+}
+
+task testUpdate { task ->
+    check.dependsOn task
+    dependsOn(testWithoutUpdateAndCallbacks,
+            testWithoutUpdateWithCallbacks,
+            testWithUpdateAndNoCallbacks,
+            testWithUpdateAndCallbacks,
+    )
+}
