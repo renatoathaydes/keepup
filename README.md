@@ -25,14 +25,15 @@ Unlike most other self-update libraries, Keepup updates the application as a who
 the launcher, the JVM, all libraries, everything that is packed with `jlink` and included in the result image!
 
 * works with any app launcher (no custom launcher required).
-* upgrades the app and the JVM itself.
+* upgrades the app and the JVM itself (as jlink packs the JVM and the app together).
 * works with any kind of application: CLI, Server, Desktop App (incl. JavaFX).
 * application decides when to check for updates, and when to apply it.
 * application can perform any check required in the distributed zip file.
 * supports immediate app restart and upgrade on exit.
 * does not enforce where app is distributed from: use GitHub Releases, Amazon S3, GitLab, your own server or anything else.  
 * 100% configured with code.
-* no bash or batch code involved: Keepup is pure Java.
+* no bash or batch code involved: Keepup is pure Java, hence naturally multi-platform.
+* works with any JVM language (Kotlin, Groovy, Scala...) that can be packaged with jlink.
 
 ## Using Keepup
 
@@ -140,20 +141,11 @@ class MyApp {
             System.out.println("No updates at this time");
         }).onError((e) -> {
             System.err.println("Cannot update due to " + e);
-        }).onDone((installer) -> {
-            // the installer is only provided on a successful update...
-            // on errors or not-accepted updates, it would be null
-            if (installer != null) {
-                // call one of:
-                // * quitAndLaunchUpgradedApp()
-                // * launchUpgradedAppWithoutExiting()
-                // * installUpgradeOnExit()
-                installer.quitAndLaunchUpgradedApp();
-            }
-
-            // close Keepup if you do not need to check again
-            keepup.close();
-        });
+        }).onDone(
+            // done but no update: close Keepup if shouldn't check for updates again
+            keepup::close,
+            // done with update successful: quit and launch the new version!
+            UpgradeInstaller::quitAndLaunchUpgradedApp);
 
         // decide when to check for updates...
         keepup.createUpdater().checkForUpdate();
