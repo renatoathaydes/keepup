@@ -1,6 +1,5 @@
 import groovy.text.SimpleTemplateEngine
-
-import java.util.concurrent.TimeUnit
+import tests.KeepupTester
 
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
@@ -54,7 +53,7 @@ task generateJavaSources { task ->
 
 task jlink(type: Exec) {
     dependsOn deps
-    inputs.files(sourceSets*.allSource)
+    inputs.dir('src')
     outputs.dir(image)
     def options = [
             '--module-path', mods,
@@ -68,84 +67,62 @@ task jlink(type: Exec) {
     doFirst { new File(image).deleteDir() }
 }
 
+def packagedImage = file('build/simple-app.image.zip')
+def downloadFile = file('build/simple-app.zip')
+
 task packageImage(type: Zip) {
     dependsOn jlink
     from image
     into "simple-app"
     include '**/*'
-    archiveName "simple-app.zip"
-    destinationDir file('build')
+    archiveName packagedImage.name
+    destinationDir packagedImage.parentFile
 }
 
 def gradlew = isFamily(FAMILY_WINDOWS) ? 'gradlew.bat' : './gradlew'
-
-task buildVersion1(type: Exec) {
-    workingDir rootDir
-    commandLine gradlew, ':examples:simple-example:jlink'
-}
 
 task buildVersion2(type: Exec) {
     workingDir rootDir
     commandLine gradlew, ':examples:simple-example:packageImage', '-PnewVersion=2.0'
 }
 
-def keepupLog = {
-    def file = file('build/keepup.log')
-    if (file.isFile()) return file.text
-    else return ''
-}
+def tester = new KeepupTester(project, 'simple_app', packagedImage, downloadFile)
 
 task testWithoutUpdate {
-    dependsOn jlink
-    def launcher = "$buildDir/image/bin/simple_app${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
-    def logFile = file("build/app.log")
+    dependsOn packageImage
     doFirst {
-        logFile.delete()
+        tester.reset()
     }
     doLast {
-        def proc = launcher.execute(null, projectDir)
-        def ok = proc.waitFor(10, TimeUnit.SECONDS)
-        if (!ok) {
-            proc.destroyForcibly()
-            assert ok: 'Process did not terminate within timeout\n' +
-                    "Keepup log: ${keepupLog()}"
-        }
-        assert proc.exitValue() == 0: "Keepup log: ${keepupLog()}"
-        assert logFile.text ==
-                'SimpleApp version 1.0-SNAPSHOT\n' +
-                'No updates at this time\n': "Keepup log: ${keepupLog()}"
+        tester.exec()
+        tester.verifyProcessExitCode(0)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs(
+                '''|SimpleApp version 1.0-SNAPSHOT
+                   |No updates at this time
+                   |'''.stripMargin())
     }
 }
 
 task testCanUpdate {
-    dependsOn buildVersion1, buildVersion2
-    def launcher = "$buildDir/image/bin/simple_app${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
-    def logFile = file("build/app.log")
+    dependsOn packageImage, buildVersion2
+    mustRunAfter testWithoutUpdate
     doFirst {
-        logFile.delete()
+        tester.reset()
+        tester.makeUpdateAvailable()
     }
     doLast {
-        def proc = launcher.execute(null, projectDir)
-        def ok = proc.waitFor(15, TimeUnit.SECONDS)
-        if (!ok) {
-            proc.destroyForcibly()
-            assert ok: "Process did not terminate within timeout\nKeepup log: ${keepupLog()}"
-        }
-        assert proc.exitValue() == 0: "Keepup log: ${keepupLog()}"
-
-        def outputIsExpected = false
-        def tries = 5
-        while (!outputIsExpected && tries > 0) {
-            outputIsExpected = logFile.text ==
-                    'SimpleApp version 1.0-SNAPSHOT\n' +
-                    'Updating to version v2\n' +
-                    'SimpleApp version 2.0\n' +
-                    'No updates at this time\n'
-            tries--
-            sleep 500
-        }
-        assert tries > 0: "Log file is not as expected: '${logFile.text}'\n" +
-                "Keepup log: ${keepupLog()}"
+        tester.exec()
+        tester.verifyProcessExitCode(0)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs(
+                '''|SimpleApp version 1.0-SNAPSHOT
+                   |Updating to version v2
+                   |SimpleApp version 2.0
+                   |No updates at this time
+                   |'''.stripMargin())
     }
 }
 
