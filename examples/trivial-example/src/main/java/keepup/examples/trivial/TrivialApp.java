@@ -4,6 +4,7 @@ import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
+import com.athaydes.keepup.api.UpgradeInstaller;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,12 +25,11 @@ class TrivialApp {
 
         var keepup = new Keepup(new TrivialConfig());
 
-        keepup.onDone(Keepup.NO_OP, (installer) -> {
-            installer.quitAndLaunchUpgradedApp();
-
-            // close Keepup as we do not check for updates again
-            keepup.close();
-        });
+        keepup.onDone(
+                // done but no update: close Keepup if shouldn't check for updates again
+                keepup::close,
+                // done with update successful: quit and launch the new version!
+                UpgradeInstaller::quitAndLaunchUpgradedApp);
 
         // in this simple app, we just check for updates every time we start up...
         // When the app starts again after an update, Keepup will detect that and will
