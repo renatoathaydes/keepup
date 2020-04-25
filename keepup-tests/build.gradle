@@ -1,8 +1,9 @@
 import groovy.text.SimpleTemplateEngine
-import org.apache.tools.ant.taskdefs.condition.Os
 import tests.KeepupTester
 
+
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
+import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_MAC
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
 plugins {
@@ -173,8 +174,8 @@ task testWithUpdateAndNoCallbacks {
 }
 
 task testWithUpdateAndCallbacks {
-    // only run this test on Linux/Unix as it expects app to be replaced while still running
-    enabled = isFamily(Os.FAMILY_UNIX)
+    // only run this test on Linux as it expects app to be replaced while still running
+    enabled = !isFamily(FAMILY_MAC) && !isFamily(FAMILY_WINDOWS)
     dependsOn jlink, buildVersion2, backupImage
     mustRunAfter testWithUpdateAndNoCallbacks
     doFirst {
