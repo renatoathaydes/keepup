@@ -5,10 +5,10 @@ import java.util.function.Consumer;
 /**
  * The result of a successful upgrade cycle.
  * <p>
- * When an upgrade cycle ends in success, the {@link Keepup#onDone(Consumer)} callback will be called with
- * an instance of this class, so that the application can decide when to finalize the upgrade.
+ * When an upgrade cycle ends in success, the {@link Keepup#onDone(Runnable, Consumer)} second callback will be called
+ * with an instance of this class, so that the application can decide when to finalize the application upgrade.
  * <p>
- * It may call only one of the methods of this class, as each method uses a different strategy for performing
+ * Only one of the methods of this class should be called, as each method uses a different strategy for performing
  * the upgrade.
  */
 public interface UpgradeInstaller {
