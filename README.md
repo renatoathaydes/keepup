@@ -160,3 +160,18 @@ class MyApp {
 ## Working examples
 
 Please find working examples of applications using Keepup in the [examples](examples) directory.
+
+## Building Keepup
+
+If you want to build Keepup locally, I recommend that you use [SDKMAN!](https://sdkman.io/) to get 
+the right Java distribution (must be Java 11+ and include the JavaFX runtime):
+
+```
+sdkman use java 11.0.5.fx-zulu
+```
+
+Then, after cloning the repository, run the `check` Gradle task to build and test everything:
+
+```
+./gradlew check
+```
