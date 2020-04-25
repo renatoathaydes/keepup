@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -127,7 +128,11 @@ class SampleDistributor implements AppDistributor<AppVersion> {
     private final Set<String> versions = new HashSet<>();
 
     @Override
-    public Optional<AppVersion> findLatestVersion() {
+    public CompletionStage<Optional<AppVersion>> findLatestVersion() {
+        // notice that because we return a Future, we could ask the user in the UI Thread
+        // whether or not to download the update before returning the new version.
+        var future = new CompletableFuture<Optional<AppVersion>>();
+
         // any file in the build directory with a name like "update-.*.zip" is treated as an update
         var files = new File("build").listFiles();
         if (files != null) for (var file : files) {
@@ -135,11 +140,14 @@ class SampleDistributor implements AppDistributor<AppVersion> {
             if (fname.matches("update-.*\\.zip")) {
                 String version = fname.substring("update-".length(), fname.length() - 4);
                 if (versions.add(version)) {
-                    return Optional.of(AppVersion.ofString(version));
+                    future.complete(Optional.of(AppVersion.ofString(version)));
                 }
             }
         }
-        return Optional.empty();
+
+        future.complete(Optional.empty());
+
+        return future;
     }
 
     @Override

@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -87,10 +88,10 @@ class SimpleAppDistributor implements AppDistributor<AppVersion> {
     final File newVersionZip = new File("build", "simple-app.zip");
 
     @Override
-    public Optional<AppVersion> findLatestVersion() {
-        return newVersionZip.isFile()
+    public CompletionStage<Optional<AppVersion>> findLatestVersion() {
+        return CompletableFuture.completedFuture(newVersionZip.isFile()
                 ? Optional.of(AppVersion.ofString("v2"))
-                : Optional.empty();
+                : Optional.empty());
     }
 
     @Override

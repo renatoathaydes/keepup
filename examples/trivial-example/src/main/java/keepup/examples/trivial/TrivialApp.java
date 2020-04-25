@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 class TrivialApp {
 
@@ -56,10 +58,10 @@ class TrivialAppDistributor implements AppDistributor<AppVersion> {
     final File newVersionZip = new File("build", "trivial-app.zip");
 
     @Override
-    public Optional<AppVersion> findLatestVersion() {
-        return newVersionZip.isFile()
+    public CompletionStage<Optional<AppVersion>> findLatestVersion() {
+        return CompletableFuture.completedFuture(newVersionZip.isFile()
                 ? Optional.of(AppVersion.ofString("v2"))
-                : Optional.empty();
+                : Optional.empty());
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.athaydes.keepup.api;
 
 import java.io.File;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 /**
  * An AppDistributor defines how the application finds and downloads new releases.
@@ -18,7 +19,7 @@ public interface AppDistributor<V extends AppVersion> {
      * @return the new version of the application, if any
      * @throws Exception on error
      */
-    Optional<V> findLatestVersion() throws Exception;
+    CompletionStage<Optional<V>> findLatestVersion() throws Exception;
 
     /**
      * Download or obtain a zip file for the given version of the application.

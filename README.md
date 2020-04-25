@@ -77,15 +77,19 @@ An application must create an instance of the `Keepup` class to use Keepup. This
 import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.Optional;
 
 class MyAppDistributor implements AppDistributor<AppVersion> {
 
     @Override
-    public Optional<AppVersion> findLatestVersion() throws Exception {
-        // fetch the new version from somewhere...
+    public CompletionStage<Optional<AppVersion>> findLatestVersion() throws Exception {
+        // Fetch the new version from somewhere...
         // only return non-empty if the version is not the same as the current one!
-        return Optional.of(AppVersion.ofString("v2"));
+        // Notice that because we return a Future, we could ask the user in the UI Thread
+        // whether or not to download the update before returning the new version.
+        return CompletableFuture.completedFuture(Optional.of(AppVersion.ofString("v2")));
     }
 
     @Override

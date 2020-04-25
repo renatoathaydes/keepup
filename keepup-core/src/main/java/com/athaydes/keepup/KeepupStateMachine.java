@@ -74,9 +74,17 @@ public final class KeepupStateMachine {
 
     private <V extends AppVersion> void findVersion(
             AppDistributor<V> distributor) throws Exception {
-        distributor.findLatestVersion().ifPresentOrElse(v -> {
-            invokeDownload(v.name(), () -> distributor.download(v));
-        }, this::noUpdate);
+        distributor.findLatestVersion().whenComplete((version, error) -> {
+            config.executor().submit(() -> {
+                if (error == null) {
+                    version.ifPresentOrElse(v -> {
+                        invokeDownload(v.name(), () -> distributor.download(v));
+                    }, this::noUpdate);
+                } else {
+                    endWithError(new KeepupException(LATEST_VERSION_CHECK, error));
+                }
+            });
+        });
     }
 
     private void cleanupPreviousUpdate(File unpackedApp) {

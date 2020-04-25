@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 interface EnvVars {
     String ACCEPT_VERSION = "ACCEPT_VERSION";
@@ -122,10 +123,11 @@ class TestConfig implements KeepupConfig {
 class TestDistributor implements AppDistributor<AppVersion> {
 
     @Override
-    public Optional<AppVersion> findLatestVersion() {
+    public CompletionStage<Optional<AppVersion>> findLatestVersion() {
         var v = System.getenv(EnvVars.NEW_VERSION);
-        if (v == null) return Optional.empty();
-        return Optional.of(AppVersion.ofString(v));
+        return CompletableFuture.completedFuture(v == null
+                ? Optional.empty()
+                : Optional.of(AppVersion.ofString(v)));
     }
 
     @Override

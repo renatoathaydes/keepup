@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -39,7 +41,7 @@ public class GitHubAppDistributor implements AppDistributor<GithubAppVersion> {
     }
 
     @Override
-    public Optional<GithubAppVersion> findLatestVersion() throws Exception {
+    public CompletionStage<Optional<GithubAppVersion>> findLatestVersion() throws Exception {
         var connection = Http.connect(new URL(GH_URL), "POST");
         connection.setDoOutput(true);
         var payload = query.getBytes(StandardCharsets.UTF_8);
@@ -47,19 +49,23 @@ public class GitHubAppDistributor implements AppDistributor<GithubAppVersion> {
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Content-Length", Integer.toString(payload.length));
 
+        var future = new CompletableFuture<Optional<GithubAppVersion>>();
         try {
             connection.getOutputStream().write(payload);
             if (connection.getResponseCode() == 200) {
                 var response = GitHubResponse.fromGraphQL(connection.getInputStream());
                 var latestVersion = response.getLatestVersion();
                 if (isNewVersion.test(latestVersion)) {
-                    return Optional.of(new GithubAppVersion(response));
+                    future.complete(Optional.of(new GithubAppVersion(response)));
                 }
             }
         } finally {
             connection.disconnect();
         }
-        return Optional.empty();
+
+        future.complete(Optional.empty());
+
+        return future;
     }
 
     @Override
