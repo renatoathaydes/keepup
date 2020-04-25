@@ -4,19 +4,19 @@ import com.athaydes.keepup.api.KeepupException;
 import com.athaydes.keepup.api.UpgradeInstaller;
 
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public final class KeepupCallbacks {
 
-    final BiFunction<String, File, CompletableFuture<Boolean>> onUpdate;
+    final BiFunction<String, File, CompletionStage<Boolean>> onUpdate;
     final Runnable onNoUpdate;
     final Consumer<KeepupException> onError;
     final Runnable doneWithoutUpdate;
     final Consumer<UpgradeInstaller> doneWithUpdate;
 
-    public KeepupCallbacks(BiFunction<String, File, CompletableFuture<Boolean>> onUpdate,
+    public KeepupCallbacks(BiFunction<String, File, CompletionStage<Boolean>> onUpdate,
                            Runnable onNoUpdate,
                            Consumer<KeepupException> onError,
                            Runnable doneWithoutUpdate,

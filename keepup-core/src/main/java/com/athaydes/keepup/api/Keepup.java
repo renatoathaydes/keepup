@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -25,7 +26,7 @@ public final class Keepup implements Closeable, AutoCloseable {
 
     private final KeepupConfig config;
 
-    private volatile BiFunction<String, File, CompletableFuture<Boolean>> onUpdate;
+    private volatile BiFunction<String, File, CompletionStage<Boolean>> onUpdate;
     private volatile Runnable onNoUpdate;
     private volatile Consumer<KeepupException> onError;
     private volatile Runnable doneWithoutUpdate;
@@ -58,7 +59,7 @@ public final class Keepup implements Closeable, AutoCloseable {
      * @param onUpdate callback
      * @return this
      */
-    public Keepup onUpdate(BiFunction<String, File, CompletableFuture<Boolean>> onUpdate) {
+    public Keepup onUpdate(BiFunction<String, File, CompletionStage<Boolean>> onUpdate) {
         this.onUpdate = Objects.requireNonNull(onUpdate);
         return this;
     }

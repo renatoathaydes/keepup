@@ -4,7 +4,7 @@ import com.athaydes.keepup.KeepupCallbacks;
 import com.athaydes.keepup.KeepupStateMachine;
 
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -20,7 +20,7 @@ public final class Updater {
     private final KeepupCallbacks callbacks;
 
     public Updater(KeepupConfig config,
-                   BiFunction<String, File, CompletableFuture<Boolean>> onUpdate,
+                   BiFunction<String, File, CompletionStage<Boolean>> onUpdate,
                    Runnable onNoUpdate,
                    Consumer<KeepupException> onError,
                    Runnable doneWithoutUpdate,
