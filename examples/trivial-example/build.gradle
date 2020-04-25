@@ -70,3 +70,8 @@ task packageImage(type: Zip) {
     archiveName "trivial-app.zip"
     destinationDir file('build')
 }
+
+task cleanAppHome(type: Delete) { task ->
+    clean.dependsOn task
+    delete "${System.getProperty('user.home')}/.trivial_app"
+}
