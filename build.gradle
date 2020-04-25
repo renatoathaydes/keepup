@@ -6,12 +6,11 @@ subprojects { sub ->
     if (sub.path == ':examples') {
         return
     }
-    println "project ${sub.path}"
     apply plugin: 'java'
     apply plugin: "org.javamodularity.moduleplugin"
 
     group 'com.athaydes.keepup'
-    version '1.0-RC2'
+    version '1.0'
 
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
