@@ -1,4 +1,5 @@
 import groovy.text.SimpleTemplateEngine
+import org.apache.tools.ant.taskdefs.condition.Os
 import tests.KeepupTester
 
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
@@ -154,6 +155,10 @@ task testWithUpdateAndNoCallbacks {
         tester.verifyErrorIs('')
         tester.verifyAppLogIs('TestApp version 1.0-SNAPSHOT\nExiting\n')
 
+        // wait a little bit as the update may still be installing on Windows as it
+        // waits for the previous process to die before being able to finish installation
+        sleep 1000L
+
         // on restart, a new version should run
         tester.reset()
         tester.cleanup = restoreImageBackup
@@ -168,6 +173,8 @@ task testWithUpdateAndNoCallbacks {
 }
 
 task testWithUpdateAndCallbacks {
+    // only run this test on Linux/Unix as it expects app to be replaced while still running
+    enabled = isFamily(Os.FAMILY_UNIX)
     dependsOn jlink, buildVersion2, backupImage
     mustRunAfter testWithUpdateAndNoCallbacks
     doFirst {
