@@ -1,6 +1,5 @@
 package com.athaydes.keepup.api;
 
-import java.io.Closeable;
 import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -12,11 +11,8 @@ import java.util.function.Consumer;
  * This class is the center of the Keepup library.
  * <p>
  * It is used to configure and define the custom callback behaviour of the upgrading process.
- * <p>
- * As it utilizes an {@link java.util.concurrent.ExecutorService} (provided by {@link KeepupConfig})
- * to run all callbacks in the background, it must be closed when it is no longer required.
  */
-public final class Keepup implements Closeable, AutoCloseable {
+public final class Keepup {
 
     /**
      * A callback that does not do anything.
@@ -37,11 +33,8 @@ public final class Keepup implements Closeable, AutoCloseable {
         onUpdate = (v, f) -> CompletableFuture.completedFuture(true);
         onNoUpdate = NO_OP;
         onError = Throwable::printStackTrace;
-        doneWithoutUpdate = this::close;
-        doneWithUpdate = (installer) -> {
-            installer.installUpgradeOnExit();
-            close();
-        };
+        doneWithoutUpdate = NO_OP;
+        doneWithUpdate = UpgradeInstaller::installUpgradeOnExit;
 
         // app home must exist to avoid errors later
         config.appHome().mkdirs();
@@ -99,9 +92,13 @@ public final class Keepup implements Closeable, AutoCloseable {
      * callbacks will be called even when there is an error, or there is no update, or the update is aborted for
      * any reason.
      * <p>
-     * By default, the {@code doneWithUpdate} callback calls {@link UpgradeInstaller#installUpgradeOnExit()} and
-     * then closes this instance of {@link Keepup}. The {@code doneWithoutUpdate} callback only closes this instance
-     * of {@link Keepup}.
+     * By default, the {@code doneWithUpdate} callback calls {@link UpgradeInstaller#installUpgradeOnExit()},
+     * and {@code doneWithoutUpdate} does nothing.
+     * <p>
+     * If the application does not check for updates more than once with this instance of {@link Keepup},
+     * it could use the callbacks here to stop the {@link java.util.concurrent.ExecutorService}
+     * used by Keepup by invoking {@link Keepup#shutdown()}, otherwise the
+     * executor may stop the application from terminating (as it may keep live Threads in the background).
      *
      * @param doneWithoutUpdate callback called when an update check ended without an update, for whatever reason
      * @param doneWithUpdate    callback called when an update check results in a successful update.
@@ -116,23 +113,20 @@ public final class Keepup implements Closeable, AutoCloseable {
 
     /**
      * Create an instance of {@link Updater} for future update checks.
-     * <p>
-     * This method must be called only after all callbacks have been setup.
      *
      * @return an {@link Updater} that can initiate checks for new releases.
      */
     public Updater createUpdater() {
-        return new Updater(config, onUpdate, onNoUpdate, onError, doneWithoutUpdate, doneWithUpdate);
+        return new Updater(config, onUpdate, onNoUpdate, onError,
+                doneWithoutUpdate, doneWithUpdate);
     }
 
     /**
-     * Close this {@link Keepup} instance.
-     * <p>
-     * Calling this will close the {@link java.util.concurrent.ExecutorService} provided by the
-     * associated {@link KeepupConfig}.
+     * Shuts down the {@link java.util.concurrent.ExecutorService} associated with this
+     * {@link Keepup} instance.
      */
-    @Override
-    public void close() {
-        config.executor().shutdown();
+    public void shutdown() {
+        getConfig().executor().shutdown();
     }
+
 }

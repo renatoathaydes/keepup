@@ -44,7 +44,9 @@ public final class Updater {
     /**
      * Check for updates.
      * <p>
-     * Calling this method has the effect of starting a Keepup upgrade cycle.
+     * Calling this method has the effect of starting a Keepup update cycle if no previous cycle is still running.
+     * <p>
+     * If a previous cycle has not completed when this method is called, then this call has no effect.
      *
      * @see Keepup
      */

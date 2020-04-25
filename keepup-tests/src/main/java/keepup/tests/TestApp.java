@@ -94,12 +94,12 @@ class TestApp {
         // always sleep a little bit in order to not kill Keepup before it does anything
         var exitAfterMs = Optional.ofNullable(System.getenv(EnvVars.EXIT_AFTER_MS))
                 .map(Long::parseLong)
-                .orElse(500L);
+                .orElse(1000L);
 
         Thread.sleep(exitAfterMs);
 
         log("Exiting");
-        keepup.close();
+        keepup.shutdown();
     }
 }
 

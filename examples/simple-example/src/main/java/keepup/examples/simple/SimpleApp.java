@@ -48,8 +48,8 @@ class SimpleApp {
         }).onError((e) -> {
             log("Cannot update due to " + e);
         }).onDone(
-                // done but no update: close Keepup if shouldn't check for updates again
-                keepup::close,
+                // done but no update: shutdown Keepup's executor if shouldn't check for updates again
+                keepup::shutdown,
                 // done with update successful: quit and launch the new version!
                 UpgradeInstaller::quitAndLaunchUpgradedApp);
 

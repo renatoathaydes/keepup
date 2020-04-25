@@ -56,7 +56,7 @@ public class JavaFxSample extends Application {
 
     @Override
     public void stop() {
-        keepup.close();
+        keepup.shutdown();
     }
 
     private void initializeKeepup(Stage primaryStage) {
