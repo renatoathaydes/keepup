@@ -7,21 +7,26 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * An GitHub API response for a request for release information about a particular repository.
+ * <p>
+ * It includes the actual version of the release, as well as the release's available assets.
+ */
 public final class GitHubResponse {
     private final String latestVersion;
-    private final List<GitHubAsset> releases;
+    private final List<GitHubAsset> assets;
 
-    public GitHubResponse(String latestVersion, List<GitHubAsset> releases) {
+    public GitHubResponse(String latestVersion, List<GitHubAsset> assets) {
         this.latestVersion = latestVersion;
-        this.releases = releases;
+        this.assets = assets;
     }
 
     public String getLatestVersion() {
         return latestVersion;
     }
 
-    public List<GitHubAsset> getReleases() {
-        return releases;
+    public List<GitHubAsset> getAssets() {
+        return assets;
     }
 
     static GitHubResponse fromGraphQL(InputStream stream) throws IOException {

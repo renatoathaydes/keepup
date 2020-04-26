@@ -1,7 +1,9 @@
 package com.athaydes.keepup.github;
 
 import com.athaydes.keepup.api.AppDistributor;
+import com.athaydes.keepup.api.KeepupException;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -11,9 +13,25 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
+import static com.athaydes.keepup.api.KeepupException.ErrorCode.LATEST_VERSION_CHECK;
+
+/**
+ * An implementation of {@link AppDistributor} based on GitHub Releases.
+ * <p>
+ * It uses the <a href="https://developer.github.com/v4/">GitHub GraphQL API (version 4)</a>
+ * to obtain data about a repository's releases.
+ * <p>
+ * Most behaviour of this class is customizable via callbacks passed into its constructor, so it is usually
+ * not necessary to sub-class it to adapt its behaviour.
+ * <p>
+ * This implementation avoids relying on anything other than the Java basic standard library
+ * (module {@code java.base}) and a small JSON parser (org.json) by performing HTTP requests via
+ * {@link java.net.URLConnection}, and building the GraphQL query (which is static) as a simple JSON
+ * String.
+ */
 public class GitHubAppDistributor implements AppDistributor<GithubAppVersion> {
     private static final String GH_URL = "https://api.github.com/graphql";
 
@@ -22,17 +40,17 @@ public class GitHubAppDistributor implements AppDistributor<GithubAppVersion> {
 
     private final String accessToken;
     private final String query;
-    private final Predicate<String> isNewVersion;
+    private final Function<String, CompletionStage<Boolean>> acceptVersion;
     private final Function<GitHubResponse, GitHubAsset> selectDownloadAsset;
 
     public GitHubAppDistributor(String accessToken,
                                 String owner,
                                 String repository,
                                 int assetsCount,
-                                Predicate<String> isNewVersion,
+                                Function<String, CompletionStage<Boolean>> acceptVersion,
                                 Function<GitHubResponse, GitHubAsset> selectDownloadAsset) {
         this.accessToken = accessToken;
-        this.isNewVersion = isNewVersion;
+        this.acceptVersion = acceptVersion;
         this.selectDownloadAsset = selectDownloadAsset;
         this.query = String.format(QUERY,
                 validateQueryComponent(owner),
@@ -53,19 +71,39 @@ public class GitHubAppDistributor implements AppDistributor<GithubAppVersion> {
         try {
             connection.getOutputStream().write(payload);
             if (connection.getResponseCode() == 200) {
-                var response = GitHubResponse.fromGraphQL(connection.getInputStream());
+                var response = GitHubResponse.fromGraphQL(
+                        new BufferedInputStream(connection.getInputStream(), 4096));
                 var latestVersion = response.getLatestVersion();
-                if (isNewVersion.test(latestVersion)) {
-                    future.complete(Optional.of(new GithubAppVersion(response)));
-                }
+                acceptVersion.apply(latestVersion)
+                        .whenComplete(completeFuture(future, response));
+                return future;
+            } else {
+                var error = new String(connection.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                future.completeExceptionally(new KeepupException(
+                        LATEST_VERSION_CHECK, String.format(
+                        "GitHub response status code is not 200: %s - body: %s",
+                        connection.getResponseCode(),
+                        error)));
+                return future;
             }
         } finally {
             connection.disconnect();
         }
+    }
 
-        future.complete(Optional.empty());
-
-        return future;
+    private BiConsumer<Boolean, Throwable> completeFuture(CompletableFuture<Optional<GithubAppVersion>> future,
+                                                          GitHubResponse response) {
+        return (accept, error) -> {
+            if (error != null) {
+                future.completeExceptionally(error);
+            } else {
+                if (accept) {
+                    future.complete(Optional.of(new GithubAppVersion(response)));
+                } else {
+                    future.complete(Optional.empty());
+                }
+            }
+        };
     }
 
     @Override
@@ -85,11 +123,20 @@ public class GitHubAppDistributor implements AppDistributor<GithubAppVersion> {
         }
     }
 
-    protected String validateQueryComponent(String s) {
-        if (s.contains("\"")) {
+    /**
+     * Check value to be passed into a GraphQL query.
+     * <p>
+     * The default implementation forbids double-quotes as that could break the JSON object
+     * representing the query.
+     *
+     * @param value for a GraphQL query component
+     * @return the validated, possibly santized value
+     */
+    protected String validateQueryComponent(String value) {
+        if (value.contains("\"")) {
             throw new IllegalArgumentException("contains invalid characters");
         }
-        return s;
+        return value;
     }
 
 }

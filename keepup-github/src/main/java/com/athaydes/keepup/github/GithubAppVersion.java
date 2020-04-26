@@ -2,6 +2,9 @@ package com.athaydes.keepup.github;
 
 import com.athaydes.keepup.api.AppVersion;
 
+/**
+ * A version of an application provided by the GitHub API.
+ */
 public final class GithubAppVersion implements AppVersion {
     private final GitHubResponse response;
 
