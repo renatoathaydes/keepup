@@ -7,7 +7,7 @@ description 'GitHub Distributor for Keepup'
 
 dependencies {
     implementation project(':keepup-core')
-    implementation 'org.json:json:20190722'
+    implementation 'com.guicedee.services:json:1.0.7.12'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
