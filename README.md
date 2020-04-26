@@ -16,8 +16,13 @@ Keepup has only the following requirements for an application to be able to use 
 * must be packaged with `jlink`.
 * the jlink-created image must be distributed in a zip file.
 
+> See the [trivial-example](examples/trivial-example/build.gradle) for an example of setting up a Gradle-based
+> application build to meet the above requirements.
+
 There must also be a mechanism for Keepup to know if there is a newer release. This is usually a HTTP endpoint
-which provides the latest version, but can be anything, even a local file.  
+which provides the latest version, but can be anything, even a local file.
+
+> Keepup has the optional [keepup-github](keepup-github) module to get releases using the GitHub Releases API.
 
 ## Features
 
