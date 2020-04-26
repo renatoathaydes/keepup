@@ -3,7 +3,7 @@ package com.athaydes.keepup.api;
 import java.util.function.Consumer;
 
 /**
- * Error that may occur during a Keepup upgrade cycle.
+ * Error that may occur during a Keepup update cycle.
  * <p>
  * Applications should handle this exception in the {@link Keepup#onError(Consumer)} callback.
  */
@@ -21,8 +21,8 @@ public class KeepupException extends RuntimeException {
         VERIFY_UPDATE,
         CREATE_UPDATE_SCRIPT,
         CURRENT_NOT_JLINK_APP,
-        UPGRADE_NOT_JLINK_APP,
-        CANNOT_REMOVE_UPGRADE_ZIP,
+        UPDATE_NOT_JLINK_APP,
+        CANNOT_REMOVE_UPDATE_ZIP,
     }
 
     private final ErrorCode errorCode;

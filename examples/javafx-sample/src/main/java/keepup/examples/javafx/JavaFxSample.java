@@ -4,7 +4,7 @@ import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
-import com.athaydes.keepup.api.UpgradeInstaller;
+import com.athaydes.keepup.api.UpdateInstaller;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -84,7 +84,7 @@ public class JavaFxSample extends Application {
                         button("OK", dialog::hide));
                 dialog.show();
             });
-        }).onDone(Keepup.NO_OP, UpgradeInstaller::quitAndLaunchUpgradedApp);
+        }).onDone(Keepup.NO_OP, UpdateInstaller::quitAndLaunchUpdatedApp);
 
         var exec = (ScheduledExecutorService) keepup.getConfig().executor();
 

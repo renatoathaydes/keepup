@@ -4,7 +4,7 @@ import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
-import com.athaydes.keepup.api.UpgradeInstaller;
+import com.athaydes.keepup.api.UpdateInstaller;
 import keepup.examples.trivial.Version;
 
 import java.io.File;
@@ -77,13 +77,13 @@ class TestApp {
 
         switch (onDone) {
             case INSTALL_ON_EXIT:
-                keepup.onDone(doneNoUpdate, UpgradeInstaller::installUpgradeOnExit);
+                keepup.onDone(doneNoUpdate, UpdateInstaller::installUpdateOnExit);
                 break;
             case QUIT_AND_LAUNCH:
-                keepup.onDone(doneNoUpdate, UpgradeInstaller::quitAndLaunchUpgradedApp);
+                keepup.onDone(doneNoUpdate, UpdateInstaller::quitAndLaunchUpdatedApp);
                 break;
             case ONLY_LAUNCH:
-                keepup.onDone(doneNoUpdate, UpgradeInstaller::launchUpgradedAppWithoutExiting);
+                keepup.onDone(doneNoUpdate, UpdateInstaller::launchUpdatedAppWithoutExiting);
                 break;
             case NOTHING:
                 break;

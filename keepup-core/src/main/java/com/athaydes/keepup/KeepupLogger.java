@@ -1,5 +1,6 @@
 package com.athaydes.keepup;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,5 +20,9 @@ public final class KeepupLogger {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public File getLogFile() {
+        return logFile.toFile();
     }
 }

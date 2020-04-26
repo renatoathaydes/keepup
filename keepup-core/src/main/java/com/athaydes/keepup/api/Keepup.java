@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 /**
  * This class is the center of the Keepup library.
  * <p>
- * It is used to configure and define the custom callback behaviour of the upgrading process.
+ * It is used to configure and define the custom callback behaviour of the updating process.
  */
 public final class Keepup {
 
@@ -26,7 +26,7 @@ public final class Keepup {
     private volatile Runnable onNoUpdate;
     private volatile Consumer<KeepupException> onError;
     private volatile Runnable doneWithoutUpdate;
-    private volatile Consumer<UpgradeInstaller> doneWithUpdate;
+    private volatile Consumer<UpdateInstaller> doneWithUpdate;
 
     public Keepup(KeepupConfig config) {
         this.config = new KeepupConfigWrapper(config);
@@ -34,7 +34,7 @@ public final class Keepup {
         onNoUpdate = NO_OP;
         onError = Throwable::printStackTrace;
         doneWithoutUpdate = NO_OP;
-        doneWithUpdate = UpgradeInstaller::installUpgradeOnExit;
+        doneWithUpdate = UpdateInstaller::installUpdateOnExit;
 
         // app home must exist to avoid errors later
         config.appHome().mkdirs();
@@ -73,7 +73,7 @@ public final class Keepup {
     /**
      * Define what to do when an error occurs.
      * <p>
-     * An error can occur both when another callback is run, or when something else fails during an upgrade.
+     * An error can occur both when another callback is run, or when something else fails during an update.
      * <p>
      * By default, this callback logs the stacktrace to stderr.
      *
@@ -92,7 +92,7 @@ public final class Keepup {
      * callbacks will be called even when there is an error, or there is no update, or the update is aborted for
      * any reason.
      * <p>
-     * By default, the {@code doneWithUpdate} callback calls {@link UpgradeInstaller#installUpgradeOnExit()},
+     * By default, the {@code doneWithUpdate} callback calls {@link UpdateInstaller#installUpdateOnExit()},
      * and {@code doneWithoutUpdate} does nothing.
      * <p>
      * If the application does not check for updates more than once with this instance of {@link Keepup},
@@ -105,7 +105,7 @@ public final class Keepup {
      * @return this
      */
     public Keepup onDone(Runnable doneWithoutUpdate,
-                         Consumer<UpgradeInstaller> doneWithUpdate) {
+                         Consumer<UpdateInstaller> doneWithUpdate) {
         this.doneWithoutUpdate = Objects.requireNonNull(doneWithoutUpdate);
         this.doneWithUpdate = Objects.requireNonNull(doneWithUpdate);
         return this;

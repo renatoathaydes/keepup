@@ -23,11 +23,11 @@ final class IoUtils {
             deleteContents(destinationDir);
         } else {
             if (destinationDir.isFile()) {
-                throw new IllegalArgumentException("upgrade destination is not a directory, " +
+                throw new IllegalArgumentException("update destination is not a directory, " +
                         "but a file: " + destinationDir);
             }
             if (!destinationDir.mkdirs()) {
-                throw new IOException("upgrade destination directory cannot be created: " + destinationDir);
+                throw new IOException("update destination directory cannot be created: " + destinationDir);
             }
         }
 

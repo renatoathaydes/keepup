@@ -4,7 +4,7 @@ import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
-import com.athaydes.keepup.api.UpgradeInstaller;
+import com.athaydes.keepup.api.UpdateInstaller;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,7 +51,7 @@ class SimpleApp {
                 // done but no update: shutdown Keepup's executor if shouldn't check for updates again
                 keepup::shutdown,
                 // done with update successful: quit and launch the new version!
-                UpgradeInstaller::quitAndLaunchUpgradedApp);
+                UpdateInstaller::quitAndLaunchUpdatedApp);
 
         // in this simple app, we just check for updates every time we start up...
         // When the app starts again after an update, Keepup will detect that and will

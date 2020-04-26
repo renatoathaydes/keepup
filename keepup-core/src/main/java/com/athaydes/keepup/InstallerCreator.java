@@ -3,10 +3,11 @@ package com.athaydes.keepup;
 import com.athaydes.keepup.api.InstallerArgs;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
-import com.athaydes.keepup.api.UpgradeInstaller;
+import com.athaydes.keepup.api.UpdateInstaller;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ProcessBuilder.Redirect;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,14 +18,14 @@ import static com.athaydes.keepup.IoUtils.unpackedApp;
 
 final class InstallerCreator {
 
-    static UpgradeInstaller create(KeepupConfig config) {
+    static UpdateInstaller create(KeepupConfig config) {
         var currVersion = currentApp().toPath();
         var newVersion = unpackedApp(config.appHome()).toPath();
         return new Installer(config, new InstallerArgs(currVersion, newVersion,
-                config.keepupLog(), config.appName(), false));
+                config.appName(), false));
     }
 
-    private static class Installer implements UpgradeInstaller {
+    private static class Installer implements UpdateInstaller {
         private final AtomicBoolean done = new AtomicBoolean(false);
         private final KeepupLogger log;
         private final InstallerArgs args;
@@ -36,21 +37,21 @@ final class InstallerCreator {
         }
 
         @Override
-        public void launchUpgradedAppWithoutExiting() {
+        public void launchUpdatedAppWithoutExiting() {
             checkNotDone();
             log.log("Invoking installer");
             invokeInstaller(true);
         }
 
         @Override
-        public void quitAndLaunchUpgradedApp() {
-            launchUpgradedAppWithoutExiting();
+        public void quitAndLaunchUpdatedApp() {
+            launchUpdatedAppWithoutExiting();
             log.log("Exiting process");
             System.exit(0);
         }
 
         @Override
-        public void installUpgradeOnExit() {
+        public void installUpdateOnExit() {
             checkNotDone();
             log.log("Will run installer on JVM shutdown");
             Runtime.getRuntime().addShutdownHook(new Thread(() -> invokeInstaller(false)));
@@ -66,8 +67,8 @@ final class InstallerCreator {
 
             try {
                 var proc = new ProcessBuilder(command)
-                        .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                        .redirectError(ProcessBuilder.Redirect.DISCARD)
+                        .redirectOutput(Redirect.to(log.getLogFile()))
+                        .redirectError(Redirect.to(log.getLogFile()))
                         .start();
 
                 // we try to wait until the process is done as in some platforms, the running software

@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 public interface KeepupConfig {
     /**
      * @return the app name, which should match the name of the application launcher, and,
-     * usually, the top-level directory inside an upgrade zip file.
+     * usually, the top-level directory inside an update zip file.
      */
     String appName();
 
@@ -28,7 +28,7 @@ public interface KeepupConfig {
     }
 
     /**
-     * @return an {@link AppDistributor} for obtaining application upgrades.
+     * @return an {@link AppDistributor} for obtaining application updates.
      */
     AppDistributor<?> distributor();
 

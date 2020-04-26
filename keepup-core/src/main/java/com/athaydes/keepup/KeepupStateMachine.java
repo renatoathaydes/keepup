@@ -4,7 +4,7 @@ import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.KeepupConfig;
 import com.athaydes.keepup.api.KeepupException;
-import com.athaydes.keepup.api.UpgradeInstaller;
+import com.athaydes.keepup.api.UpdateInstaller;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.athaydes.keepup.IoUtils.currentApp;
 import static com.athaydes.keepup.IoUtils.looksLikeJlinkApp;
 import static com.athaydes.keepup.IoUtils.setFilePermissions;
-import static com.athaydes.keepup.api.KeepupException.ErrorCode.CANNOT_REMOVE_UPGRADE_ZIP;
+import static com.athaydes.keepup.api.KeepupException.ErrorCode.CANNOT_REMOVE_UPDATE_ZIP;
 import static com.athaydes.keepup.api.KeepupException.ErrorCode.CREATE_UPDATE_SCRIPT;
 import static com.athaydes.keepup.api.KeepupException.ErrorCode.CURRENT_NOT_JLINK_APP;
 import static com.athaydes.keepup.api.KeepupException.ErrorCode.DONE_CALLBACK;
@@ -23,7 +23,7 @@ import static com.athaydes.keepup.api.KeepupException.ErrorCode.DOWNLOAD;
 import static com.athaydes.keepup.api.KeepupException.ErrorCode.LATEST_VERSION_CHECK;
 import static com.athaydes.keepup.api.KeepupException.ErrorCode.NO_UPDATE_CALLBACK;
 import static com.athaydes.keepup.api.KeepupException.ErrorCode.UNPACK;
-import static com.athaydes.keepup.api.KeepupException.ErrorCode.UPGRADE_NOT_JLINK_APP;
+import static com.athaydes.keepup.api.KeepupException.ErrorCode.UPDATE_NOT_JLINK_APP;
 import static com.athaydes.keepup.api.KeepupException.ErrorCode.VERIFY_UPDATE;
 
 public final class KeepupStateMachine {
@@ -150,8 +150,8 @@ public final class KeepupStateMachine {
                     setFilePermissions(newVersionDir, config.appName());
                     createInstaller(zip);
                 } else {
-                    endWithError(new KeepupException(UPGRADE_NOT_JLINK_APP,
-                            "Upgrade location: " + newVersionDir));
+                    endWithError(new KeepupException(UPDATE_NOT_JLINK_APP,
+                            "Update location: " + newVersionDir));
                 }
             } catch (Exception e) {
                 endWithError(new KeepupException(UNPACK, e));
@@ -165,10 +165,10 @@ public final class KeepupStateMachine {
             try {
                 var installer = InstallerCreator.create(config);
                 if (zip.delete()) {
-                    log.log("Upgrade successful");
+                    log.log("Update successful");
                     success(installer);
                 } else {
-                    endWithError(new KeepupException(CANNOT_REMOVE_UPGRADE_ZIP,
+                    endWithError(new KeepupException(CANNOT_REMOVE_UPDATE_ZIP,
                             "Location: " + zip));
                 }
             } catch (Exception e) {
@@ -203,7 +203,7 @@ public final class KeepupStateMachine {
         }
     }
 
-    private void success(UpgradeInstaller installer) {
+    private void success(UpdateInstaller installer) {
         try {
             callbacks.doneWithUpdate.accept(installer);
         } catch (Exception e) {

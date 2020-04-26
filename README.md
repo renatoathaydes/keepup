@@ -25,14 +25,14 @@ Unlike most other self-update libraries, Keepup updates the application as a who
 the launcher, the JVM, all libraries, everything that is packed with `jlink` and included in the result image!
 
 * works with any app launcher (no custom launcher required).
-* upgrades the app and the JVM itself (as jlink packs the JVM and the app together).
+* updates the app and the JVM itself (as jlink packs the JVM and the app together).
 * works with any kind of application: CLI, Server, Desktop App (incl. JavaFX).
 * application decides when to check for updates, and when to apply it.
 * application can perform any check required in the distributed zip file.
-* supports immediate app restart and upgrade on exit.
+* supports immediate app restart and update on exit.
 * does not enforce where app is distributed from: use GitHub Releases, Amazon S3, GitLab, your own server or anything else.  
 * 100% configured with code.
-* no bash or batch code involved: Keepup is pure Java, hence naturally multi-platform.
+* no bash or batch scripts involved: Keepup is pure Java, hence naturally multi-platform.
 * works with any JVM language (Kotlin, Groovy, Scala...) that can be packaged with jlink.
 
 ## Using Keepup
@@ -125,7 +125,7 @@ class TrivialConfig implements KeepupConfig {
 Now, create a `Keepup` instance and set callbacks for everything.
 
 > All callbacks have sensible defaults, but you probably should implement them anyway
-> to customize how your users will be told about upgrades, how to validate the download, etc.
+> to customize how your users will be told about updates, how to validate the download, etc.
 
 ```java
 class MyApp {
@@ -149,7 +149,7 @@ class MyApp {
             // done but no update: shutdown Keepup's executor if shouldn't check for updates again
             keepup::shutdown,
             // done with update successful: quit and launch the new version!
-            UpgradeInstaller::quitAndLaunchUpgradedApp);
+            UpdateInstaller::quitAndLaunchUpdatedApp);
 
         // decide when to check for updates...
         keepup.createUpdater().checkForUpdate();

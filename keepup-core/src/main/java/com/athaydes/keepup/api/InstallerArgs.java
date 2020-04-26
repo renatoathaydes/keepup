@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Arguments provided to the installer.
  * <p>
- * The installer is an application that runs inside the downloaded upgrade while the old application is
+ * The installer is an application that runs inside the downloaded update while the old application is
  * still installed on the local machine. Its job is to replace the old application with the new one.
  * <p>
  * Currently, only Keepup implements the installer, but in the future applications may provide custom
@@ -16,26 +16,24 @@ import java.util.List;
 public final class InstallerArgs {
     private final Path currentVersion;
     private final Path newVersion;
-    private final Path keepupLog;
     private final String appName;
     private final boolean relaunch;
 
-    public InstallerArgs(Path currentVersion, Path newVersion, Path keepupLog,
+    public InstallerArgs(Path currentVersion, Path newVersion,
                          String appName, boolean relaunch) {
         this.currentVersion = currentVersion;
         this.newVersion = newVersion;
-        this.keepupLog = keepupLog;
         this.appName = appName;
         this.relaunch = relaunch;
     }
 
     public static InstallerArgs of(String[] mainArgs) {
-        if (mainArgs.length < 5) {
+        if (mainArgs.length < 4) {
             throw new IllegalArgumentException("Expected at least 5 arguments: " +
                     "currentVersion, newVersion, keepUpLog, appName, relaunch|norelaunch.");
         }
-        return new InstallerArgs(Paths.get(mainArgs[0]), Paths.get(mainArgs[1]), Paths.get(mainArgs[2]),
-                mainArgs[3], isRelaunch(mainArgs[4]));
+        return new InstallerArgs(Paths.get(mainArgs[0]), Paths.get(mainArgs[1]),
+                mainArgs[2], isRelaunch(mainArgs[3]));
     }
 
     private static boolean isRelaunch(String arg) {
@@ -57,10 +55,6 @@ public final class InstallerArgs {
         return newVersion;
     }
 
-    public Path getKeepupLog() {
-        return keepupLog;
-    }
-
     public String getAppName() {
         return appName;
     }
@@ -73,7 +67,6 @@ public final class InstallerArgs {
         return List.of(
                 currentVersion.toFile().getAbsolutePath(),
                 newVersion.toFile().getAbsolutePath(),
-                keepupLog.toFile().getAbsolutePath(),
                 appName,
                 relaunch ? "relaunch" : "norelaunch"
         );

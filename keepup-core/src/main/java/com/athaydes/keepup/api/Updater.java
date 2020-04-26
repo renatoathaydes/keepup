@@ -10,7 +10,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
- * Simple class that can be used for checking for new updates, i.e. starting a new Keepup upgrade cycle.
+ * Simple class that can be used for checking for new updates, i.e. starting a new Keepup update cycle.
  */
 public final class Updater {
 
@@ -24,7 +24,7 @@ public final class Updater {
                    Runnable onNoUpdate,
                    Consumer<KeepupException> onError,
                    Runnable doneWithoutUpdate,
-                   Consumer<UpgradeInstaller> doneWithUpdate) {
+                   Consumer<UpdateInstaller> doneWithUpdate) {
         this.config = config;
         this.callbacks = new KeepupCallbacks(
                 onUpdate,
