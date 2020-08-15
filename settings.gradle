@@ -3,8 +3,8 @@ rootProject.name = 'keepup'
 include('keepup-core',
         'keepup-github',
         'keepup-bintray',
-        'examples:simple-example',
         'examples:trivial-example',
         'examples:javafx-sample',
         'keepup-tests:core-tests',
+        'keepup-tests:simple-example',
 )

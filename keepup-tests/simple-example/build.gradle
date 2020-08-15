@@ -83,7 +83,7 @@ def gradlew = isFamily(FAMILY_WINDOWS) ? 'gradlew.bat' : './gradlew'
 
 task buildVersion2(type: Exec) {
     workingDir rootDir
-    commandLine gradlew, ':examples:simple-example:packageImage', '-PnewVersion=2.0'
+    commandLine gradlew, ':keepup-tests:simple-example:packageImage', '-PnewVersion=2.0'
 }
 
 def tester = new KeepupTester(project, 'simple_app', packagedImage, downloadFile)
