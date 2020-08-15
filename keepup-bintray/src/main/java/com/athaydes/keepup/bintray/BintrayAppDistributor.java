@@ -84,15 +84,16 @@ public class BintrayAppDistributor implements AppDistributor<BintrayVersion> {
 
     @Override
     public File download(BintrayVersion version) throws Exception {
-        var url = new URL(String.format("https://dl.bintray.com/%s/%s/%s/%s/%s/%s/%s-%s.zip",
-                subject, repositoryName, packageName, coordToPath(groupId), artifactId,
+        var url = new URL(String.format("https://dl.bintray.com/%s/%s/%s/%s/%s/%s-%s.zip",
+                subject, repositoryName, coordToPath(groupId), artifactId,
                 version.name(), artifactId, version.name()));
 
         var connection = Http.connect(url, "GET", true);
 
         try {
             if (connection.getResponseCode() != 200) {
-                throw new IOException("Unexpected status code: " + connection.getResponseCode());
+                throw new IOException("Unexpected status code: " + connection.getResponseCode() +
+                        " (" + url + ")");
             }
             var file = Files.createTempFile("keepup-asset", ".zip");
             Files.copy(connection.getInputStream(), file, StandardCopyOption.REPLACE_EXISTING);

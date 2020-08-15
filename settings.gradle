@@ -7,4 +7,5 @@ include('keepup-core',
         'examples:javafx-sample',
         'keepup-tests:core-tests',
         'keepup-tests:simple-example',
+        'keepup-tests:bintray-tests',
 )

@@ -20,13 +20,15 @@ class KeepupTester {
 
     private Process process
 
-    KeepupTester(Project project, String appName, File packagedImage, File testAppUpdateFile) {
+    KeepupTester(Project project, String appName, File packagedImage, File testAppUpdateFile,
+                 String launcherVersion = null) {
         this.project = project
         appLogFile = project.file("build/app.log")
         keepupLogFile = project.file('build/keepup.log')
         this.packagedImage = packagedImage
         this.testAppUpdateFile = testAppUpdateFile
-        launcher = "${project.buildDir}/image/bin/${appName}${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
+        launcher = "${project.buildDir}${launcherVersion == null ? '' : '/' + launcherVersion}" +
+                "/image/bin/${appName}${isFamily(FAMILY_WINDOWS) ? '.bat' : ''}"
     }
 
     void reset() {

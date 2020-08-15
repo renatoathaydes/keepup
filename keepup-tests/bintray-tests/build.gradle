@@ -1,0 +1,193 @@
+import groovy.text.SimpleTemplateEngine
+import org.apache.tools.ant.taskdefs.condition.Os
+import tests.KeepupTester
+
+plugins {
+    id 'java'
+    id "com.jfrog.bintray" version "1.8.4"
+}
+
+final osFamily = Os.isFamily( Os.FAMILY_MAC ) ? 'mac' : Os.isFamily( Os.FAMILY_WINDOWS ) ? 'win' : 'linux'
+
+group 'com.athaydes.keepup'
+version '1.0-TEST'
+
+repositories {
+    jcenter()
+}
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
+dependencies {
+    implementation project(':keepup-core')
+    implementation project(':keepup-bintray')
+}
+
+tasks.withType( JavaCompile ) {
+    options.encoding = 'UTF-8'
+}
+
+String newVersion = project.version
+
+if (hasProperty('newVersion')) {
+    newVersion = getProperty('newVersion')
+    buildDir = file("build/${newVersion}")
+}
+
+def image = "${buildDir}/image"
+def mods = "${buildDir}/mods"
+
+task deps {
+    dependsOn jar
+    doLast {
+        copy {
+            from configurations.runtimeClasspath
+            from jar
+            into mods
+        }
+    }
+}
+
+task generateJavaSources { task ->
+    compileJava.dependsOn task
+    doLast {
+        def template = file('src/main/Version.java.template')
+        def generated = new SimpleTemplateEngine().createTemplate(template).make([VERSION: newVersion])
+        file('src/main/java/keepup/examples/bintray/Version.java').withWriter { w ->
+            generated.writeTo(w)
+        }
+    }
+}
+
+task jlink(type: Exec) {
+    dependsOn deps
+    inputs.dir('src')
+    outputs.dir(image)
+    def options = [
+            '--module-path', mods,
+            '--vm=server', // options: client|server|minimal|all
+            '--add-modules', 'com.athaydes.keepup.core,com.athaydes.keepup.bintray,keepup.examples.bintray',
+            '--output', image,
+            '--launcher', 'simple_app=keepup.examples.bintray/keepup.examples.bintray.SimpleApp',
+            '--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    def jlink = System.getProperty('java.home') + '/bin/jlink'
+    commandLine([jlink] + options)
+    doFirst { new File(image).deleteDir() }
+}
+
+def packagedImage = file('build/simple-app.image.zip')
+def downloadFile = file('build/simple-app.zip')
+
+task packageImage(type: Zip) {
+    dependsOn jlink
+    from image
+    into "simple-app"
+    include '**/*'
+    archiveName packagedImage.name
+    destinationDir packagedImage.parentFile
+}
+
+def gradlew = Os.isFamily(Os.FAMILY_WINDOWS) ? 'gradlew.bat' : './gradlew'
+
+task buildVersion0(type: Exec) {
+    workingDir rootDir
+    commandLine gradlew, ':keepup-tests:bintray-tests:packageImage', '-PnewVersion=0.1'
+}
+
+
+task testWithoutUpdate {
+    def tester = new KeepupTester(project, 'simple_app', packagedImage, downloadFile)
+    dependsOn packageImage
+    doFirst {
+        tester.reset()
+    }
+    doLast {
+        tester.exec()
+        tester.verifyProcessExitCode(0, 5_000L)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs(
+                """|SimpleApp version $version
+                   |No updates at this time
+                   |""".stripMargin())
+    }
+}
+
+task testCanUpdate {
+    def tester = new KeepupTester(project, 'simple_app', packagedImage, downloadFile, '0.1')
+
+    dependsOn packageImage, buildVersion0
+    mustRunAfter testWithoutUpdate
+    doFirst {
+        tester.reset()
+    }
+    doLast {
+        tester.exec()
+        tester.verifyProcessExitCode(0, 30_000L)
+        tester.verifyOutputIs('')
+        tester.verifyErrorIs('')
+        tester.verifyAppLogIs(
+                """|SimpleApp version 0.1
+                   |Updating to version $version
+                   |SimpleApp version $version
+                   |No updates at this time
+                   |""".stripMargin(), 15000L)
+    }
+}
+
+task testUpdate { task ->
+    check.dependsOn task
+    dependsOn testWithoutUpdate, testCanUpdate
+}
+
+task sourcesJar( type: Jar, dependsOn: classes ) {
+    from sourceSets.main.allSource
+    classifier "sources"
+    extension "jar"
+}
+
+task javadocJar( type: Jar ) {
+    classifier "javadoc"
+    from javadoc
+}
+
+/* Publishing config */
+
+configurations {
+    binaries
+}
+
+artifacts {
+    binaries packageImage
+}
+
+bintray {
+    user = project.hasProperty( "bintrayUserName" ) ? bintrayUserName : null
+    key = project.hasProperty( "bintrayApiKey" ) ? bintrayApiKey : null
+    configurations = [ 'binaries' ]
+    publish = true
+    pkg {
+        repo = osFamily
+        name = "keepup-bintray-tests"
+        licenses = [ 'Apache-2.0' ]
+        desc = project.description
+        vcsUrl = 'https://github.com/renatoathaydes/keepup.git'
+        websiteUrl = 'https://github.com/renatoathaydes/keepup'
+        issueTrackerUrl = 'https://github.com/renatoathaydes/keepup/issues'
+        labels = [ 'java', 'javafx', 'self-update' ]
+        publicDownloadNumbers = true
+
+        //noinspection GroovyAssignabilityCheck
+        version {
+            name = project.version
+            vcsTag = project.version
+            gpg {
+                sign = true
+            }
+        }
+    }
+
+}
+
+bintrayUpload.dependsOn build, sourcesJar
