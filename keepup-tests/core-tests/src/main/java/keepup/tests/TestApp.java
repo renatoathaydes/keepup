@@ -5,7 +5,6 @@ import com.athaydes.keepup.api.AppVersion;
 import com.athaydes.keepup.api.Keepup;
 import com.athaydes.keepup.api.KeepupConfig;
 import com.athaydes.keepup.api.UpdateInstaller;
-import keepup.examples.trivial.Version;
 
 import java.io.File;
 import java.io.IOException;

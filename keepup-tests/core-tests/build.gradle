@@ -94,7 +94,7 @@ def gradlew = isFamily(FAMILY_WINDOWS) ? 'gradlew.bat' : './gradlew'
 
 task buildVersion2(type: Exec) {
     workingDir rootDir
-    commandLine gradlew, ':keepup-tests:packageImage', '-PnewVersion=2.0'
+    commandLine gradlew, ':keepup-tests:core-tests:packageImage', '-PnewVersion=2.0'
 }
 
 def restoreImageBackup = {

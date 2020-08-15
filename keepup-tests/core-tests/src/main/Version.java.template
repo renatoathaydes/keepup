@@ -1,4 +1,4 @@
-package keepup.examples.trivial;
+package keepup.tests;
 
 public class Version {
     public static final String CURRENT = "$VERSION";

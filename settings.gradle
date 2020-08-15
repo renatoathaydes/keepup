@@ -6,5 +6,5 @@ include('keepup-core',
         'examples:simple-example',
         'examples:trivial-example',
         'examples:javafx-sample',
-        'keepup-tests',
+        'keepup-tests:core-tests',
 )
