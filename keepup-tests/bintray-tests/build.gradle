@@ -95,7 +95,6 @@ task buildVersion0(type: Exec) {
     commandLine gradlew, ':keepup-tests:bintray-tests:packageImage', '-PnewVersion=0.1'
 }
 
-
 task testWithoutUpdate {
     def tester = new KeepupTester(project, 'simple_app', packagedImage, downloadFile)
     dependsOn packageImage
@@ -139,17 +138,6 @@ task testCanUpdate {
 task testUpdate { task ->
     check.dependsOn task
     dependsOn testWithoutUpdate, testCanUpdate
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    from sourceSets.main.allSource
-    classifier "sources"
-    extension "jar"
-}
-
-task javadocJar(type: Jar) {
-    classifier "javadoc"
-    from javadoc
 }
 
 /* Publishing config */
@@ -196,4 +184,4 @@ bintray {
 
 }
 
-bintrayUpload.dependsOn build, sourcesJar
+bintrayUpload.dependsOn packageImage
