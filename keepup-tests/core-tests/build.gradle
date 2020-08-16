@@ -146,12 +146,13 @@ task testWithUpdateAndNoCallbacks {
         tester.makeUpdateAvailable()
     }
     doLast {
-        tester.envVars = [EXIT_AFTER_MS: 1000, NEW_VERSION: '2.0']
+        final exitAfterMs = 2000
+        tester.envVars = [EXIT_AFTER_MS: exitAfterMs, NEW_VERSION: '2.0']
         def startTime = System.currentTimeMillis()
         tester.exec()
         tester.verifyProcessExitCode(0, 7000L)
         def totalRuntime = System.currentTimeMillis() - startTime
-        assert totalRuntime >= 1000: 'process exited before time when app closed Keepup'
+        assert totalRuntime >= exitAfterMs: 'process exited before time when app closed Keepup'
         tester.verifyOutputIs('')
         tester.verifyErrorIs('')
         tester.verifyAppLogIs('TestApp version 1.0-SNAPSHOT\nExiting\n')
