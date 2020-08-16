@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.athaydes.keepup.IoUtils.currentApp;
@@ -33,15 +34,17 @@ public final class KeepupStateMachine {
     private final KeepupConfig config;
     private final KeepupCallbacks callbacks;
     private final KeepupLogger log;
+    private final ExecutorService executor;
 
     public KeepupStateMachine(KeepupConfig config, KeepupCallbacks callbacks) {
         this.config = config;
         this.callbacks = callbacks;
+        this.executor = config.executor();
         this.log = new KeepupLogger(config.keepupLog());
     }
 
     public void start() {
-        config.executor().submit(() -> {
+        executor.submit(() -> {
             if (isFirstRun.getAndSet(false)) {
                 log.log("First run");
                 File unpackedApp = IoUtils.unpackedApp(config.appHome());
@@ -62,7 +65,7 @@ public final class KeepupStateMachine {
     }
 
     private void checkForUpdate() {
-        config.executor().submit(() -> {
+        executor.submit(() -> {
             log.log("Checking for update");
             try {
                 findVersion(config.distributor());
@@ -75,7 +78,7 @@ public final class KeepupStateMachine {
     private <V extends AppVersion> void findVersion(
             AppDistributor<V> distributor) throws Exception {
         distributor.findLatestVersion().whenComplete((version, error) -> {
-            config.executor().submit(() -> {
+            executor.submit(() -> {
                 if (error == null) {
                     version.ifPresentOrElse(v -> {
                         invokeDownload(v.name(), () -> distributor.download(v));
@@ -109,7 +112,7 @@ public final class KeepupStateMachine {
     }
 
     private void invokeDownload(String newVersion, Callable<File> download) {
-        config.executor().submit(() -> {
+        executor.submit(() -> {
             log.log("Downloading version " + newVersion);
             try {
                 var zip = download.call();
@@ -121,7 +124,7 @@ public final class KeepupStateMachine {
     }
 
     private void verifyUpdate(String newVersion, File zip) {
-        config.executor().submit(() -> {
+        executor.submit(() -> {
             log.log("Verifying update");
             try {
                 callbacks.onUpdate.apply(newVersion, zip).whenComplete((continueUpdate, error) -> {
@@ -142,7 +145,7 @@ public final class KeepupStateMachine {
     }
 
     private void unpackNewVersion(File zip) {
-        config.executor().submit(() -> {
+        executor.submit(() -> {
             log.log("Unpacking update");
             try {
                 var newVersionDir = IoUtils.unpack(zip, config.appHome());
@@ -160,7 +163,7 @@ public final class KeepupStateMachine {
     }
 
     private void createInstaller(File zip) {
-        config.executor().submit(() -> {
+        executor.submit(() -> {
             log.log("Creating installer");
             try {
                 var installer = InstallerCreator.create(config);

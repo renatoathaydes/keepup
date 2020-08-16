@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import static com.athaydes.keepup.api.KeepupException.ErrorCode.APP_HOME;
+
 /**
  * Simple class that can be used for checking for new updates, i.e. starting a new Keepup update cycle.
  */
@@ -51,6 +53,9 @@ public final class Updater {
      * @see Keepup
      */
     public void checkForUpdate() {
+        if (!config.appHome().mkdirs() && !config.appHome().isDirectory()) {
+            throw new KeepupException(APP_HOME, "AppHome is not a directory and it could not be created");
+        }
         if (isUpdating.compareAndSet(false, true)) {
             new KeepupStateMachine(config, callbacks).start();
         }

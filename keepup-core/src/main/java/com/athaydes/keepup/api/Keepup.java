@@ -20,7 +20,7 @@ public final class Keepup {
     public static final Runnable NO_OP = () -> {
     };
 
-    private final KeepupConfig config;
+    private final KeepupConfigWrapper config;
 
     private volatile BiFunction<String, File, CompletionStage<Boolean>> onUpdate;
     private volatile Runnable onNoUpdate;
@@ -35,9 +35,6 @@ public final class Keepup {
         onError = Throwable::printStackTrace;
         doneWithoutUpdate = NO_OP;
         doneWithUpdate = UpdateInstaller::installUpdateOnExit;
-
-        // app home must exist to avoid errors later
-        config.appHome().mkdirs();
     }
 
     public KeepupConfig getConfig() {
@@ -126,7 +123,7 @@ public final class Keepup {
      * {@link Keepup} instance.
      */
     public void shutdown() {
-        getConfig().executor().shutdown();
+        config.executor().shutdown();
     }
 
 }

@@ -13,6 +13,7 @@ public class KeepupException extends RuntimeException {
      * Simple error codes describing at a high level what kind of issues may cause a {@link KeepupException}.
      */
     public enum ErrorCode {
+        APP_HOME,
         DOWNLOAD,
         LATEST_VERSION_CHECK,
         NO_UPDATE_CALLBACK,
