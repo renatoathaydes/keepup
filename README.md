@@ -1,5 +1,7 @@
 # Keepup
 
+[ ![Download](https://api.bintray.com/packages/renatoathaydes/maven/keepup/images/download.svg) ](https://bintray.com/renatoathaydes/maven/keepup/_latestVersion)
+
 ![Keepup Tests](https://github.com/renatoathaydes/keepup/workflows/Keepup%20Tests/badge.svg)
 
 Keepup is a library to allow Java 11+ applications to self-update.
@@ -10,7 +12,7 @@ It is designed to work specifically with self-contained applications built with 
 
 ## Requirements
 
-Keepup has only the following requirements for an application to be able to use it:
+Keepup has the following requirements for an application to be able to use it:
 
 * must be compiled with Java 11 or newer.
 * must be packaged with `jlink`.
@@ -22,7 +24,9 @@ Keepup has only the following requirements for an application to be able to use 
 There must also be a mechanism for Keepup to know if there is a newer release. This is usually a HTTP endpoint
 which provides the latest version, but can be anything, even a local file.
 
-> Keepup has the optional [keepup-github](keepup-github) module to get releases using the GitHub Releases API.
+> Keepup has the optional [keepup-github](keepup-github) module to get releases using the GitHub Releases API v3,
+> and the [keepup-bintray](keepup-bintray) module if you prefer to use Bintray. A fully configured Bintray-distributed
+> example app is used for testing this module, check it out in the [bintray-tests](keepup-tests/bintray-tests) project.
 
 ## Features
 
@@ -35,7 +39,7 @@ the launcher, the JVM, all libraries, everything that is packed with `jlink` and
 * application decides when to check for updates, and when to apply it.
 * application can perform any check required in the distributed zip file.
 * supports immediate app restart and update on exit.
-* does not enforce where app is distributed from: use GitHub Releases, Amazon S3, GitLab, your own server or anything else.  
+* does not enforce where app is distributed from: use GitHub Releases, Bintray, Amazon S3, your own server or anything else.  
 * 100% configured with code.
 * no bash or batch scripts involved: Keepup is pure Java, hence naturally multi-platform.
 * works with any JVM language (Kotlin, Groovy, Scala...) that can be packaged with jlink.
@@ -72,11 +76,14 @@ module my.mod {
 
 An application must create an instance of the `Keepup` class to use Keepup. This requires two things:
 
-#### Implement `com.athaydes.keepup.api.AppDistributor`
+#### Implement or configure an `com.athaydes.keepup.api.AppDistributor`
 
-> Currently, Keepup has one ready-to-use implementation of `AppDistributor` in the 
-> [keepup-github](keepup-github) module, which uses the GitHub Releases API to find and download
-> new versions. In the future, there should be more implementations, like for Maven Central or JCenter.
+Currently, Keepup provides the following ready-to-use implementations of `AppDistributor`:
+ 
+* [keepup-github](keepup-github): uses the GitHub Releases API v3.
+* [keepup-bintray](keepup-bintray): uses Bintray public endpoints (not the API, so authentication is not required).
+
+If you need something else, you can easily implement your own `AppDistributor`:
 
 ```java
 import com.athaydes.keepup.api.AppDistributor;
@@ -107,6 +114,10 @@ class MyAppDistributor implements AppDistributor<AppVersion> {
 
 #### Implement `com.athaydes.keepup.api.KeepupConfig`
 
+The [KeepupConfig] puts everything together.
+
+Here's a minimal implementation:
+
 ```java
 import com.athaydes.keepup.api.AppDistributor;
 import com.athaydes.keepup.api.KeepupConfig;
@@ -124,6 +135,8 @@ class TrivialConfig implements KeepupConfig {
     }
 }
 ```
+
+Check the [KeepupConfig](keepup-core/src/main/java/com/athaydes/keepup/api/KeepupConfig.java) interface for all options.
 
 #### Create a `Keepup` instance and set callbacks
 
@@ -164,12 +177,16 @@ class MyApp {
 
 ## Working examples
 
-Please find working examples of applications using Keepup in the [examples](examples) directory.
+Please find working example applications using Keepup in the [examples](examples) directory.
+
+You can also look at the [keepup-tests](keepup-tests) sub-projects, which include an [example using
+Bintray](keepup-tests/bintray-tests).
 
 ## Building Keepup
 
 If you want to build Keepup locally, I recommend that you use [SDKMAN!](https://sdkman.io/) to get 
-the right Java distribution (must be Java 11+ and include the JavaFX runtime):
+the right Java distribution (must be Java 11+... must also include the JavaFX runtime if you want to
+run the JavaFX examples):
 
 ```
 sdkman use java 11.0.5.fx-zulu
@@ -180,3 +197,10 @@ Then, after cloning the repository, run the `check` Gradle task to build and tes
 ```
 ./gradlew check
 ```
+
+### Updating/Publishing the test apps
+
+The [Bintray Test App](keepup-tests/bintray-tests) requires a published app on Bintray.
+To publish a new version of that app, switch to the `update-test-app` branch and push the changes.
+A [GitHub Action](https://github.com/renatoathaydes/keepup/actions) will publish the test app for all 
+Operating Systems.
