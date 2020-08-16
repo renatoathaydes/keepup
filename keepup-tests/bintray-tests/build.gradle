@@ -7,10 +7,10 @@ plugins {
     id "com.jfrog.bintray" version "1.8.4"
 }
 
-final osFamily = Os.isFamily( Os.FAMILY_MAC ) ? 'mac' : Os.isFamily( Os.FAMILY_WINDOWS ) ? 'win' : 'linux'
+final osFamily = Os.isFamily(Os.FAMILY_MAC) ? 'mac' : Os.isFamily(Os.FAMILY_WINDOWS) ? 'win' : 'linux'
 
 group 'com.athaydes.keepup'
-version '1.0-TEST'
+version '1.1-TEST'
 
 repositories {
     jcenter()
@@ -24,7 +24,7 @@ dependencies {
     implementation project(':keepup-bintray')
 }
 
-tasks.withType( JavaCompile ) {
+tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
@@ -141,13 +141,13 @@ task testUpdate { task ->
     dependsOn testWithoutUpdate, testCanUpdate
 }
 
-task sourcesJar( type: Jar, dependsOn: classes ) {
+task sourcesJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.allSource
     classifier "sources"
     extension "jar"
 }
 
-task javadocJar( type: Jar ) {
+task javadocJar(type: Jar) {
     classifier "javadoc"
     from javadoc
 }
@@ -162,20 +162,26 @@ artifacts {
     binaries packageImage
 }
 
+def getSecret = { String projectProperty, String envName ->
+    project.hasProperty(projectProperty)
+            ? project.property(projectProperty)
+            : System.getenv()[envName]
+}
+
 bintray {
-    user = project.hasProperty( "bintrayUserName" ) ? bintrayUserName : null
-    key = project.hasProperty( "bintrayApiKey" ) ? bintrayApiKey : null
-    configurations = [ 'binaries' ]
+    user = getSecret('bintrayUserName', 'BINTRAY_USER')
+    key = getSecret('bintrayApiKey', 'BINTRAY_KEY')
+    configurations = ['binaries']
     publish = true
     pkg {
         repo = osFamily
         name = "keepup-bintray-tests"
-        licenses = [ 'Apache-2.0' ]
+        licenses = ['Apache-2.0']
         desc = project.description
         vcsUrl = 'https://github.com/renatoathaydes/keepup.git'
         websiteUrl = 'https://github.com/renatoathaydes/keepup'
         issueTrackerUrl = 'https://github.com/renatoathaydes/keepup/issues'
-        labels = [ 'java', 'javafx', 'self-update' ]
+        labels = ['java', 'javafx', 'self-update']
         publicDownloadNumbers = true
 
         //noinspection GroovyAssignabilityCheck
