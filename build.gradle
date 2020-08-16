@@ -10,7 +10,7 @@ subprojects { sub ->
     apply plugin: "org.javamodularity.moduleplugin"
 
     group 'com.athaydes.keepup'
-    version '1.0-RC3'
+    version '1.0-RC4'
 
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
